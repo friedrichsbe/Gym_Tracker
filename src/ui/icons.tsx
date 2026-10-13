@@ -1,0 +1,107 @@
+import type { SVGProps } from 'react'
+
+const base: SVGProps<SVGSVGElement> = {
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.75,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  'aria-hidden': true,
+}
+
+export const IconDumbbell = () => (
+  <svg {...base}>
+    <path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11" />
+  </svg>
+)
+export const IconClock = () => (
+  <svg {...base}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </svg>
+)
+export const IconSettings = () => (
+  <svg {...base}>
+    <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+    <circle cx="16" cy="7" r="2" />
+    <circle cx="10" cy="17" r="2" />
+  </svg>
+)
+export const IconCheck = () => (
+  <svg {...base} strokeWidth={2.5}>
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  </svg>
+)
+export const IconPin = () => (
+  <svg {...base} width={16} height={16}>
+    <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z" />
+    <circle cx="12" cy="10" r="2.5" />
+  </svg>
+)
+export const IconList = () => (
+  <svg {...base}>
+    <rect x="4" y="4" width="16" height="16" rx="3" />
+    <path d="M8.5 9h7M8.5 12h7M8.5 15h4" />
+  </svg>
+)
+export const IconChart = () => (
+  <svg {...base}>
+    <path d="M4 19h16" />
+    <path d="m5 15 4-4 3.5 3L19 7.5" />
+  </svg>
+)
+export const IconPlus = () => (
+  <svg {...base} width={18} height={18}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+)
+export const IconX = () => (
+  <svg {...base} width={18} height={18}>
+    <path d="M6 6l12 12M18 6 6 18" />
+  </svg>
+)
+export const IconMore = () => (
+  <svg {...base} width={20} height={20} strokeWidth={2.5}>
+    <path d="M5.5 12h.01M12 12h.01M18.5 12h.01" />
+  </svg>
+)
+export const IconArrowUp = () => (
+  <svg {...base} width={16} height={16}>
+    <path d="M12 19V5M6 11l6-6 6 6" />
+  </svg>
+)
+export const IconArrowDown = () => (
+  <svg {...base} width={16} height={16}>
+    <path d="M12 5v14M6 13l6 6 6-6" />
+  </svg>
+)
+export const IconChevronLeft = () => (
+  <svg {...base} width={18} height={18}>
+    <path d="m15 6-6 6 6 6" />
+  </svg>
+)
+export const IconChevronRight = () => (
+  <svg {...base} width={18} height={18}>
+    <path d="m9 6 6 6-6 6" />
+  </svg>
+)
+export const IconSliders = () => (
+  <svg {...base} width={16} height={16}>
+    <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+    <circle cx="16" cy="7" r="2" />
+    <circle cx="10" cy="17" r="2" />
+  </svg>
+)
+export const IconCalendar = () => (
+  <svg {...base}>
+    <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+    <path d="M3.5 10h17M8 3v4M16 3v4" />
+  </svg>
+)
+export const IconInbox = () => (
+  <svg {...base}>
+    <path d="M4 13.5 6.2 6.3A2 2 0 0 1 8.1 5h7.8a2 2 0 0 1 1.9 1.3L20 13.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4.5Z" />
+    <path d="M4 13.5h4.5l1.5 2.5h4l1.5-2.5H20" />
+  </svg>
+)
