@@ -89,13 +89,11 @@ export function WorkoutHome() {
   return (
     <>
       <div className="page-head">
-        <div className="page-title">
-          <span className="overline">
-            {new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).format(now)}
-          </span>
-          <h1>Workout</h1>
-        </div>
+        <h1>Workout</h1>
       </div>
+      <span className="overline page-date">
+        {new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).format(now)}
+      </span>
       <UpdateBanner />
       <BackupReminder />
 

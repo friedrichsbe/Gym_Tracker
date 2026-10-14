@@ -67,7 +67,7 @@ export function HistoryPage() {
     <main className="content">
       <div className="page-head">
         <h1>History</h1>
-        <button type="button" className="btn small" onClick={() => setLogging(true)}>
+        <button type="button" className="btn primary small" onClick={() => setLogging(true)}>
           <IconPlus />
           Log past workout
         </button>

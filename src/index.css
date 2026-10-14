@@ -3101,3 +3101,8 @@ table.data tbody tr:hover {
   text-align: center;
   margin: 0;
 }
+
+/* Date line under a page title (Workout home) */
+.page-date {
+  margin-top: calc(var(--space-3) * -1);
+}
