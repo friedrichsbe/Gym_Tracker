@@ -3458,3 +3458,18 @@ details > .preset-grid {
     inset 0 1px 0 rgba(255, 255, 255, 0.8),
     var(--shadow-md);
 }
+
+/* Collapsible input zones */
+.zone-body[hidden] {
+  display: none;
+}
+.zone-toggle {
+  color: var(--muted);
+  margin: -4px -8px -4px 0;
+}
+.zone-toggle svg {
+  transition: transform var(--dur) var(--ease);
+}
+.zone-toggle[aria-expanded='false'] svg {
+  transform: rotate(-90deg);
+}

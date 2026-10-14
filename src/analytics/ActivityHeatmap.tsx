@@ -200,9 +200,8 @@ export function ActivityHeatmap() {
         )}
 
         <p className="hint">
-          {metric === 'volume' ? 'Volume = load × reps, lb converted to kg for comparison. ' : ''}
-          Warm-up sets {settings.includeWarmupsInStats ? 'are included' : 'are not counted'} (Settings → Statistics).
-          Colours are relative to your own history.
+          {metric === 'volume' ? 'Volume = load × reps, in kg. ' : ''}
+          Warm-ups {settings.includeWarmupsInStats ? 'included' : 'excluded'}.
         </p>
       </div>
 

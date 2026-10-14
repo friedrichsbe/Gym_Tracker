@@ -154,10 +154,7 @@ export function WorkoutHome() {
             Pick exercises{day && !day.matchAll ? ` for ${day.name}` : ''}…
           </button>
         </div>
-        <p className="hint">
-          You can always add, reorder, replace or skip exercises while training — including ones outside the day (they
-          get a coloured marker).
-        </p>
+        <p className="hint">Everything stays editable while you train.</p>
       </section>
 
       <section className="stack" aria-labelledby="presets-label">

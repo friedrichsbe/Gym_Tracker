@@ -158,3 +158,8 @@ export const IconNote = () => (
     <path d="M9 12h6M9 16h4" />
   </svg>
 )
+export const IconChevronDown = () => (
+  <svg {...base} width={18} height={18}>
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+)

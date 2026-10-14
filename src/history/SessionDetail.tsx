@@ -13,6 +13,7 @@ import { toBlocks } from '../workout/supersets'
 import {
   IconCalendar,
   IconCheck,
+  IconChevronDown,
   IconChevronLeft,
   IconClock,
   IconDumbbell,
@@ -68,6 +69,9 @@ export function SessionDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [editingDetails, setEditingDetails] = useState(false)
   const [pickingExercise, setPickingExercise] = useState(false)
+  // Each input zone can be folded away to focus on the others.
+  const [collapsed, setCollapsed] = useState({ pre: false, strength: false, post: false })
+  const toggleZone = (k: keyof typeof collapsed) => setCollapsed((c) => ({ ...c, [k]: !c[k] }))
   const [menuFor, setMenuFor] = useState<WorkoutExercise | null>(null)
   const [changingFor, setChangingFor] = useState<WorkoutExercise | null>(null)
   const [removingFor, setRemovingFor] = useState<WorkoutExercise | null>(null)
@@ -208,8 +212,9 @@ export function SessionDetailPage() {
               <span className="zone-sub">Warm-up</span>
             </div>
             {preCardio > 0 && <span className="zone-count num">{preCardio}</span>}
+            <ZoneToggle open={!collapsed.pre} onToggle={() => toggleZone('pre')} />
           </header>
-          <div className="zone-body">
+          <div className="zone-body" id="zone-body-pre" hidden={collapsed.pre}>
             <CardioSection sessionId={session.id} slot="start" entries={cardio} past />
           </div>
         </section>
@@ -226,8 +231,9 @@ export function SessionDetailPage() {
                 {summary ? ` · ${summary.completedSets} ${summary.completedSets === 1 ? 'set' : 'sets'}` : ''}
               </span>
             </div>
+            <ZoneToggle open={!collapsed.strength} onToggle={() => toggleZone('strength')} />
           </header>
-          <div className="zone-body">
+          <div className="zone-body" id="zone-body-strength" hidden={collapsed.strength}>
             {toBlocks(shown, (p) => p.we.supersetGroupId).map((block) => {
               const cards = block.map(({ we, sets }) => (
                 <section
@@ -312,8 +318,9 @@ export function SessionDetailPage() {
               <span className="zone-sub">Cool-down</span>
             </div>
             {postCardio > 0 && <span className="zone-count num">{postCardio}</span>}
+            <ZoneToggle open={!collapsed.post} onToggle={() => toggleZone('post')} />
           </header>
-          <div className="zone-body">
+          <div className="zone-body" id="zone-body-post" hidden={collapsed.post}>
             <CardioSection sessionId={session.id} slot="end" entries={cardio} past />
           </div>
         </section>
@@ -680,6 +687,20 @@ function PresetForm({
         Save preset
       </button>
     </form>
+  )
+}
+
+function ZoneToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      className="btn ghost icon small zone-toggle"
+      aria-expanded={open}
+      aria-label={open ? 'Collapse section' : 'Expand section'}
+      onClick={onToggle}
+    >
+      <IconChevronDown />
+    </button>
   )
 }
 

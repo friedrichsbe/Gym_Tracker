@@ -109,8 +109,7 @@ export function Insights() {
           </div>
         )}
         <p className="hint">
-          Counted sets per week (Monday start); a set counts for every muscle group of its exercise. Warm-ups{' '}
-          {settings.includeWarmupsInStats ? 'included' : 'excluded'}. “Ø/wk” uses finished weeks only.
+          Sets per week, per muscle group. Warm-ups {settings.includeWarmupsInStats ? 'included' : 'excluded'}.
         </p>
       </div>
     </section>
