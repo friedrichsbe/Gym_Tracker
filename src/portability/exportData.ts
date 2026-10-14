@@ -7,20 +7,32 @@ import { buildZip, csvLine } from './zip'
 
 /** Builds the complete, documented JSON export (formatVersion 1). */
 export async function buildExport(): Promise<ExportFile> {
-  const [locations, exercises, dayTypes, routines, routineExercises, sessions, workoutExercises, sets, settings] =
-    await Promise.all([
-      db.locations.toArray(),
-      db.exercises.toArray(),
-      db.dayTypes.toArray(),
-      db.routines.toArray(),
-      db.routineExercises.toArray(),
-      db.sessions.toArray(),
-      db.workoutExercises.toArray(),
-      db.sets.toArray(),
-      getSettings(),
-    ])
+  const [
+    locations,
+    exercises,
+    dayTypes,
+    routines,
+    routineExercises,
+    sessions,
+    workoutExercises,
+    sets,
+    cardio,
+    settings,
+  ] = await Promise.all([
+    db.locations.toArray(),
+    db.exercises.toArray(),
+    db.dayTypes.toArray(),
+    db.routines.toArray(),
+    db.routineExercises.toArray(),
+    db.sessions.toArray(),
+    db.workoutExercises.toArray(),
+    db.sets.toArray(),
+    db.cardio.toArray(),
+    getSettings(),
+  ])
   const setsByInstance = groupBy(sets, (s) => s.workoutExerciseId)
   const instancesBySession = groupBy(workoutExercises, (w) => w.sessionId)
+  const cardioBySession = groupBy(cardio, (c) => c.sessionId)
   const exercisesByRoutine = groupBy(routineExercises, (r) => r.routineId)
 
   return {
@@ -67,6 +79,9 @@ export async function buildExport(): Promise<ExportFile> {
               .sort((a, b) => a.setNumber - b.setNumber)
               .map(({ sessionId: _s, workoutExerciseId: _w, ...set }) => set),
           })),
+        cardio: (cardioBySession.get(s.id) ?? [])
+          .sort((a, b) => Date.parse(a.startedAt) - Date.parse(b.startedAt))
+          .map(({ sessionId: _sessionId, ...c }) => c),
       })),
   }
 }
@@ -132,6 +147,8 @@ workout_exercises.csv  exercise instances within a workout: id, session_id, posi
                        planned_name, performed_name, status (planned|active|completed|skipped|substituted),
                        is_foreign (true = added although outside the workout's day type),
                        superset_group_id (exercises with the same id were done as a superset: alternating sets, no rest between), substitution_reason, notes
+cardio.csv             cardio blocks: id, session_id, session_started_at, kind (treadmill|stairmaster|elliptical|bike), slot (start|end = before/after the strength part),
+                       started_at, ended_at, duration_seconds, distance_km, floors, level (machine level/resistance), incline_pct; empty = not entered
 exercises.csv          catalogue: id, name, aliases (separated by "|"), equipment_type, movement_pattern, muscle_tags ("|"), is_custom, default_rest_seconds (rest timer, empty = global default), archived_at
 locations.csv          id, name, notes, address, archived_at
 day_types.csv          id, name, muscle_tags ("|"), exercise_ids ("|"), match_all, position, archived_at
@@ -259,6 +276,38 @@ export async function exportCsvZip(opts: { sessionId?: string } = {}): Promise<{
         we.substitutionReason,
         we.notes,
       ]),
+    ),
+    'cardio.csv': rows(
+      [
+        'id',
+        'session_id',
+        'session_started_at',
+        'kind',
+        'slot',
+        'started_at',
+        'ended_at',
+        'duration_seconds',
+        'distance_km',
+        'floors',
+        'level',
+        'incline_pct',
+      ],
+      sessions.flatMap((s) =>
+        s.cardio.map((c) => [
+          c.id,
+          s.id,
+          s.startedAt,
+          c.kind,
+          c.slot,
+          c.startedAt,
+          c.endedAt,
+          c.durationSeconds,
+          c.distanceKm,
+          c.floors,
+          c.level,
+          c.inclinePct,
+        ]),
+      ),
     ),
     'exercises.csv': rows(
       [

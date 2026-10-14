@@ -497,6 +497,9 @@ hr,
   align-items: center;
   gap: var(--space-3);
 }
+.row.top {
+  align-items: flex-start;
+}
 .row.tight {
   gap: var(--space-1);
 }
@@ -1094,6 +1097,7 @@ legend.field-label {
 }
 input[type='text'],
 input[type='search'],
+input[type='time'],
 select,
 textarea {
   font: inherit;
@@ -1113,12 +1117,14 @@ textarea {
 }
 input[type='text']:hover,
 input[type='search']:hover,
+input[type='time']:hover,
 select:hover,
 textarea:hover {
   border-color: var(--muted);
 }
 input[type='text']:focus,
 input[type='search']:focus,
+input[type='time']:focus,
 select:focus,
 textarea:focus {
   outline: none;
@@ -3055,4 +3061,43 @@ table.data tbody tr:hover {
   font-size: var(--text-sm);
   font-weight: 500;
   color: var(--text-2);
+}
+
+/* Cardio blocks (before/after the strength part) */
+.cardio-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.cardio.running {
+  border-color: var(--accent-border);
+  background: linear-gradient(var(--accent-subtle), var(--accent-subtle)), var(--surface);
+}
+.cardio-clock {
+  display: block;
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--accent-text);
+  font-variant-numeric: tabular-nums;
+}
+.cardio.done {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: var(--space-3) var(--space-4);
+}
+.cardio.done:hover {
+  border-color: var(--muted);
+}
+.cardio-total {
+  font-size: 2rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 0;
 }

@@ -2,6 +2,7 @@ import { db } from '../data/db'
 import { getSettings, updateSettings } from '../data/settings'
 import { nowIso } from '../domain/time'
 import type {
+  CardioEntry,
   DayType,
   Exercise,
   Location,
@@ -33,6 +34,7 @@ export interface ImportPlan {
   sessions: WorkoutSession[]
   workoutExercises: WorkoutExercise[]
   sets: SetRecord[]
+  cardio: CardioEntry[]
   settings: ExportFile['settings']
   counts: Record<'locations' | 'exercises' | 'dayTypes' | 'routines' | 'sessions' | 'sets', ImportCounts>
   /** Things that were repaired or skipped. Never silent. */
@@ -77,6 +79,7 @@ export async function planImport(file: ExportFile, mode: ImportMode): Promise<Im
     sessions: new Set(mode === 'merge' ? await db.sessions.toCollection().primaryKeys() : []),
     instances: new Set(mode === 'merge' ? await db.workoutExercises.toCollection().primaryKeys() : []),
     sets: new Set(mode === 'merge' ? await db.sets.toCollection().primaryKeys() : []),
+    cardio: new Set(mode === 'merge' ? await db.cardio.toCollection().primaryKeys() : []),
     routineExercises: new Set(mode === 'merge' ? await db.routineExercises.toCollection().primaryKeys() : []),
   }
   const hasActive = mode === 'merge' && !!(await db.sessions.where('status').equals('active').first())
@@ -119,12 +122,13 @@ export async function planImport(file: ExportFile, mode: ImportMode): Promise<Im
   const sessions: WorkoutSession[] = []
   const workoutExercises: WorkoutExercise[] = []
   const sets: SetRecord[] = []
+  const cardio: CardioEntry[] = []
   const placeholders = new Map<string, Exercise>()
   let activeKept = hasActive
   let relinkedLocations = 0
   let clashes = 0
 
-  for (const { exerciseInstances, ...s } of file.sessions) {
+  for (const { exerciseInstances, cardio: cardioBlocks, ...s } of file.sessions) {
     if (existing.sessions.has(s.id)) continue
     if (s.status === 'active') {
       if (activeKept) {
@@ -141,6 +145,10 @@ export async function planImport(file: ExportFile, mode: ImportMode): Promise<Im
     }
     if (s.dayTypeId && !knownDays.has(s.dayTypeId)) s.dayTypeId = null
     sessions.push(s as WorkoutSession)
+    for (const c of cardioBlocks) {
+      if (existing.cardio.has(c.id)) clashes++
+      else cardio.push({ ...c, sessionId: s.id } as CardioEntry)
+    }
 
     for (const { sets: instanceSets, ...we } of exerciseInstances) {
       if (existing.instances.has(we.id)) {
@@ -200,6 +208,7 @@ export async function planImport(file: ExportFile, mode: ImportMode): Promise<Im
     sessions,
     workoutExercises,
     sets,
+    cardio,
     settings: file.settings,
     counts: {
       locations: count(file.locations.length, locations.length),
@@ -230,6 +239,7 @@ export async function applyImport(plan: ImportPlan): Promise<void> {
     db.sessions,
     db.workoutExercises,
     db.sets,
+    db.cardio,
     db.settings,
   ]
   await db.transaction('rw', tables, async () => {
@@ -244,6 +254,7 @@ export async function applyImport(plan: ImportPlan): Promise<void> {
           db.sessions,
           db.workoutExercises,
           db.sets,
+          db.cardio,
         ].map((t) => t.clear()),
       )
     }
@@ -255,6 +266,7 @@ export async function applyImport(plan: ImportPlan): Promise<void> {
     await db.sessions.bulkAdd(plan.sessions)
     await db.workoutExercises.bulkAdd(plan.workoutExercises)
     await db.sets.bulkAdd(plan.sets)
+    await db.cardio.bulkAdd(plan.cardio)
 
     const current = await getSettings()
     const restored = plan.mode === 'replace' ? (plan.settings ?? {}) : {}

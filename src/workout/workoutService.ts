@@ -1,4 +1,5 @@
 import { db } from '../data/db'
+import { stopRunningCardio } from '../cardio/cardioService'
 import { getSettings, updateSettings } from '../data/settings'
 import { fitsDay } from '../daytypes/dayTypeService'
 import { instant, newId, nowIso } from '../domain/time'
@@ -19,6 +20,7 @@ const TABLES = () => [
   db.dayTypes,
   db.workoutExercises,
   db.sets,
+  db.cardio,
   db.locations,
   db.exercises,
   db.routines,
@@ -325,6 +327,9 @@ export interface WorkoutSummary {
   workingSets: number
   exercisesDone: number
   exercisesSkipped: number
+  /** Cardio blocks of the workout and their total time. */
+  cardioCount: number
+  cardioSeconds: number
   /** Σ weight × reps over completed sets with external load, per unit (warm-ups per the stats setting). */
   volume: Partial<Record<WeightUnit, number>>
 }
@@ -333,6 +338,7 @@ export async function summarizeSession(sessionId: string): Promise<WorkoutSummar
   const session = await db.sessions.get(sessionId)
   const exercises = await db.workoutExercises.where('sessionId').equals(sessionId).toArray()
   const sets = (await db.sets.where('sessionId').equals(sessionId).toArray()).filter((s) => s.isCompleted)
+  const cardio = await db.cardio.where('sessionId').equals(sessionId).toArray()
   const { includeWarmupsInStats } = await getSettings()
   const volume: WorkoutSummary['volume'] = {}
   for (const s of sets) {
@@ -355,6 +361,8 @@ export async function summarizeSession(sessionId: string): Promise<WorkoutSummar
     workingSets: sets.filter((s) => s.setType !== 'warmup').length,
     exercisesDone: exercises.filter((e) => withSets.has(e.id)).length,
     exercisesSkipped: exercises.filter((e) => !withSets.has(e.id)).length,
+    cardioCount: cardio.length,
+    cardioSeconds: cardio.reduce((n, c) => n + (c.durationSeconds ?? 0), 0),
     volume,
   }
 }
@@ -386,9 +394,11 @@ export async function finishWorkout(input: {
     )
     for (const we of exercises) await renumberSets(we.id)
 
+    const endedAt = input.endedAt ?? nowIso()
+    await stopRunningCardio(session.id, endedAt) // a forgotten timer ends with the workout
     await db.sessions.update(session.id, {
       status: 'completed',
-      endedAt: input.endedAt ?? nowIso(),
+      endedAt,
       notes: input.notes?.trim() || session.notes,
       updatedAt: nowIso(),
     })
@@ -407,6 +417,7 @@ export async function discardWorkout(sessionId: string): Promise<void> {
 export async function deleteSession(sessionId: string): Promise<void> {
   await db.transaction('rw', TABLES(), async () => {
     await db.sets.where('sessionId').equals(sessionId).delete()
+    await db.cardio.where('sessionId').equals(sessionId).delete()
     await db.workoutExercises.where('sessionId').equals(sessionId).delete()
     await db.sessions.delete(sessionId)
   })

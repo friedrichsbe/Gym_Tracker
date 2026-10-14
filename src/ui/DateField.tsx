@@ -11,6 +11,8 @@ interface Props {
   min?: string
   max?: string
   placeholder?: string
+  /** false for required dates: no clear button. */
+  clearable?: boolean
 }
 
 /**
@@ -18,7 +20,7 @@ interface Props {
  * (a bare date input only selects its text on phones and never raises a usable picker).
  * The real input sits invisibly over the whole field, so keyboard and screen readers still work.
  */
-export function DateField({ id, label, value, onChange, min, max, placeholder = 'Any date' }: Props) {
+export function DateField({ id, label, value, onChange, min, max, placeholder = 'Any date', clearable = true }: Props) {
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
@@ -42,7 +44,7 @@ export function DateField({ id, label, value, onChange, min, max, placeholder = 
             }
           }}
         />
-        {value && (
+        {value && clearable && (
           <button
             type="button"
             className="date-field-clear"

@@ -181,6 +181,7 @@ describe('CSV export', () => {
     expect([...files.keys()].sort()).toEqual(
       [
         'README.txt',
+        'cardio.csv',
         'day_types.csv',
         'exercises.csv',
         'locations.csv',

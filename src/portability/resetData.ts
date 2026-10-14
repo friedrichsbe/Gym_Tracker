@@ -13,6 +13,7 @@ export async function resetAllData(): Promise<void> {
       db.sessions,
       db.workoutExercises,
       db.sets,
+      db.cardio,
       db.settings,
     ],
     async () => {
@@ -26,6 +27,8 @@ export async function resetAllData(): Promise<void> {
           db.sessions,
           db.workoutExercises,
           db.sets,
+          db.cardio,
+          db.cardio,
           db.settings,
         ].map((t) => t.clear()),
       )

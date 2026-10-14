@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DateField } from '../ui/DateField'
 import { useDayTypes, useLocations, useNow } from '../data/hooks'
 import { localParts } from './sessionTime'
 import { instant, toIso } from '../domain/time'
@@ -51,10 +52,9 @@ export function SessionDetailsForm(props: {
         })
       }}
     >
-      <div className="row">
-        <div className="field grow">
-          <label htmlFor="sd-date">Date</label>
-          <input id="sd-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      <div className="row top">
+        <div className="grow">
+          <DateField id="sd-date" label="Date" value={date} onChange={setDate} clearable={false} />
         </div>
         <div className="field grow">
           <label htmlFor="sd-time">Start time</label>

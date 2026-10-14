@@ -104,6 +104,20 @@ export const exerciseInstanceSchema = z.object({
   sets: z.array(setSchema).max(500).default([]),
 })
 
+export const cardioSchema = z.object({
+  id,
+  kind: z.enum(['stairmaster', 'treadmill', 'elliptical', 'bike']),
+  slot: z.enum(['start', 'end']).default('end'),
+  startedAt: iso,
+  endedAt: iso.nullable().default(null),
+  durationSeconds: z.number().min(0).nullable().default(null),
+  distanceKm: z.number().min(0).nullable().optional(),
+  floors: z.number().min(0).nullable().optional(),
+  level: z.number().min(0).nullable().optional(),
+  inclinePct: z.number().min(0).nullable().optional(),
+  ...stamps,
+})
+
 export const sessionSchema = z.object({
   id,
   routineId: nullableId,
@@ -119,6 +133,7 @@ export const sessionSchema = z.object({
   notes: text.optional(),
   ...stamps,
   exerciseInstances: z.array(exerciseInstanceSchema).max(200).default([]),
+  cardio: z.array(cardioSchema).max(100).default([]),
 })
 
 export const settingsSchema = z

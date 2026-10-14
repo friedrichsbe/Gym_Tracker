@@ -2,6 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { RecordsList } from '../analytics/RecordsList'
+import { CardioSection } from '../cardio/CardioSection'
+import { loadCardio } from '../cardio/cardioService'
 import { useDayTypes, useRoutines } from '../data/hooks'
 import { deliver, exportCsvZip, exportJsonFile } from '../portability/exportData'
 import { createRoutineFromSession, saveRoutine, updateRoutineFromSession } from '../routines/routineService'
@@ -40,6 +42,7 @@ export function SessionDetailPage() {
   const { active: days, archived: archivedDays } = useDayTypes()
   const view = useLiveQuery(() => loadSessionView(id), [id])
   const summary = useLiveQuery(() => summarizeSession(id), [id])
+  const cardio = useLiveQuery(() => loadCardio(id), [id]) ?? []
   const { active: routines } = useRoutines()
   const [saving, setSaving] = useState(false)
   const [updatingPreset, setUpdatingPreset] = useState(false)
@@ -135,6 +138,8 @@ export function SessionDetailPage() {
         Edit date, gym &amp; day
       </button>
 
+      <CardioSection sessionId={session.id} slot="start" entries={cardio} past />
+
       {toBlocks(shown, (p) => p.we.supersetGroupId).map((block) => {
         const cards = block.map(({ we, sets }) => (
           <section
@@ -195,11 +200,13 @@ export function SessionDetailPage() {
           cards
         )
       })}
-      {shown.length === 0 && <p className="secondary">No exercises in this workout yet.</p>}
+      {shown.length === 0 && cardio.length === 0 && <p className="secondary">No exercises in this workout yet.</p>}
       <button type="button" className="btn block" onClick={() => setPickingExercise(true)}>
         <IconPlus />
         Add exercise
       </button>
+
+      <CardioSection sessionId={session.id} slot="end" entries={cardio} past />
 
       <div className="card stack">
         <div className="field">

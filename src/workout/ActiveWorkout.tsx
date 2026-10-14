@@ -2,13 +2,15 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RecordsList } from '../analytics/RecordsList'
+import { CardioSection } from '../cardio/CardioSection'
+import { isRunning, loadCardio } from '../cardio/cardioService'
 import { addExerciseToDayType, fitsDay } from '../daytypes/dayTypeService'
 import { db } from '../data/db'
 import { ExercisePicker } from '../exercises/ExercisePicker'
 import { LocationPicker } from '../locations/LocationPicker'
 import { useNow } from '../data/hooks'
 import { instant } from '../domain/time'
-import { formatDuration, formatVolume } from '../ui/format'
+import { formatDuration, formatDurationShort, formatVolume } from '../ui/format'
 import { IconDumbbell, IconPin, IconPlus } from '../ui/icons'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
@@ -42,6 +44,7 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
         : [],
     [routineId],
   )
+  const cardio = useLiveQuery(() => loadCardio(sessionId), [sessionId]) ?? []
   const extraFitIds = useMemo(() => new Set(routineExerciseIds ?? []), [routineExerciseIds])
   const now = useNow()
   const [pickingExercise, setPickingExercise] = useState(false)
@@ -85,6 +88,8 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
         </span>
         <h1>{session.dayTypeNameSnapshot ? `${session.dayTypeNameSnapshot} day` : 'Free workout'}</h1>
       </div>
+
+      <CardioSection sessionId={session.id} slot="start" entries={cardio} canAdd={!logged} />
 
       {exercises.length === 0 && (
         <div className="empty card">
@@ -130,6 +135,8 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
         Add exercise
       </button>
 
+      <CardioSection sessionId={session.id} slot="end" entries={cardio} />
+
       <ExercisePicker
         open={pickingExercise}
         mode="add"
@@ -163,6 +170,7 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
       <FinishSheet
         open={finishing}
         sessionId={session.id}
+        cardioRunning={cardio.some(isRunning)}
         onClose={() => setFinishing(false)}
         onFinish={async (notes) => {
           const summary = await guard(() => finishWorkout({ sessionId: session.id, notes }))
@@ -185,18 +193,19 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
 function FinishSheet(props: {
   open: boolean
   sessionId: string
+  cardioRunning: boolean
   onClose: () => void
   onFinish: (notes: string) => Promise<void>
   onDiscard: () => Promise<void>
 }) {
-  const { open, sessionId, onClose, onFinish, onDiscard } = props
+  const { open, sessionId, cardioRunning, onClose, onFinish, onDiscard } = props
   const [notes, setNotes] = useState('')
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const summary: WorkoutSummary | undefined = useLiveQuery(
     () => (open ? summarizeSession(sessionId) : undefined),
     [open, sessionId],
   )
-  const empty = summary && summary.completedSets === 0
+  const empty = summary && summary.completedSets === 0 && summary.cardioCount === 0
 
   return (
     <Sheet open={open} title={empty ? 'Nothing logged yet' : 'Finish workout?'} onClose={onClose}>
@@ -221,6 +230,13 @@ function FinishSheet(props: {
             <div className="l">working sets</div>
           </div>
         </div>
+      )}
+      {summary && !empty && summary.cardioCount > 0 && (
+        <p className="secondary small">
+          Cardio: {summary.cardioCount} {summary.cardioCount === 1 ? 'block' : 'blocks'} ·{' '}
+          {formatDurationShort(summary.cardioSeconds)}
+          {cardioRunning ? ' (the running timer stops when you save)' : ''}
+        </p>
       )}
       {!empty && <RecordsList sessionId={sessionId} active={open} />}
       {summary && !empty && summary.exercisesSkipped > 0 && (

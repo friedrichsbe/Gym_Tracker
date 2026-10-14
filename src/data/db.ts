@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type {
   AppSettings,
+  CardioEntry,
   DayType,
   Exercise,
   Location,
@@ -13,7 +14,7 @@ import type {
 } from '../domain/types'
 
 /** Bump together with a new `db.version(n)` block. Distinct from the export formatVersion. */
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 export const EXPORT_FORMAT_VERSION = 1
 
 export class GymTrackerDb extends Dexie {
@@ -25,6 +26,7 @@ export class GymTrackerDb extends Dexie {
   sessions!: EntityTable<WorkoutSession, 'id'>
   workoutExercises!: EntityTable<WorkoutExercise, 'id'>
   sets!: EntityTable<SetRecord, 'id'>
+  cardio!: EntityTable<CardioEntry, 'id'>
   settings!: EntityTable<AppSettings, 'key'>
   meta!: EntityTable<SchemaMetadata, 'key'>
 
@@ -46,6 +48,10 @@ export class GymTrackerDb extends Dexie {
       dayTypes: 'id, archivedAt, position',
       routines: 'id, archivedAt, dayTypeId',
       sessions: 'id, startedAt, status, locationId, dayTypeId',
+    })
+    // v3: cardio blocks (before/after the strength part of a workout).
+    this.version(3).stores({
+      cardio: 'id, sessionId, startedAt',
     })
   }
 }

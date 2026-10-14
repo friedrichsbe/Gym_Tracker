@@ -159,6 +159,31 @@ export interface SetRecord extends Timestamps {
   notes?: string
 }
 
+export type CardioKind = 'stairmaster' | 'treadmill' | 'elliptical' | 'bike'
+/** Whether the cardio was done before the strength part or after it. */
+export type CardioSlot = 'start' | 'end'
+
+/**
+ * One cardio block of a workout: timed by the app, details (1–2 values per machine) filled in afterwards.
+ * Kept apart from exercises/sets so it never leaks into volume, records or progress statistics.
+ * Running = endedAt is null; the duration is derived from the absolute timestamps, so it survives sleep/reload.
+ */
+export interface CardioEntry extends Timestamps {
+  id: Uuid
+  sessionId: Uuid
+  kind: CardioKind
+  slot: CardioSlot
+  startedAt: IsoTimestamp
+  endedAt: IsoTimestamp | null
+  /** Final length; set when stopped, editable afterwards. null while running. */
+  durationSeconds: number | null
+  distanceKm?: number | null
+  floors?: number | null
+  /** Machine level / resistance. */
+  level?: number | null
+  inclinePct?: number | null
+}
+
 export interface AppSettings {
   key: 'app'
   units: WeightUnit
