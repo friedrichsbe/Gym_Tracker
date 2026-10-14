@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { setExerciseDays } from '../daytypes/dayTypeService'
+import { fitsDay, setExerciseDays } from '../daytypes/dayTypeService'
 import { ExerciseClassification } from './ExerciseClassification'
 import { useDayTypes, useExercises, useSettings } from '../data/hooks'
 import type { EquipmentType, Exercise } from '../domain/types'
@@ -23,6 +23,9 @@ import {
 
 const EQUIPMENT: EquipmentType[] = ['machine', 'dumbbell', 'barbell', 'cable', 'bodyweight', 'other']
 
+type Source = 'builtin' | 'custom'
+const NO_DAY = '__none'
+
 export function ExercisesPage() {
   const all = useExercises()
   const usage = useLiveQuery(exerciseUsage, [])
@@ -30,9 +33,26 @@ export function ExercisesPage() {
   const [query, setQuery] = useState('')
   const [view, setView] = useState<'active' | 'archived'>('active')
   const [editing, setEditing] = useState<Exercise | 'new' | null>(null)
+  const { active: dayTypes } = useDayTypes()
+  // Optional filters; nothing selected = no restriction. Selecting several in one group means "any of these".
+  const [sources, setSources] = useState<Source[]>([])
+  const [dayFilter, setDayFilter] = useState<string[]>([])
+
+  // "Mix"-style days match every exercise, so they are no use as a filter.
+  const filterDays = useMemo(() => dayTypes.filter((d) => !d.matchAll), [dayTypes])
 
   const shown = useMemo(() => {
-    const pool = all.filter((e) => (view === 'archived' ? !!e.archivedAt : !e.archivedAt))
+    const dayOf = (e: Exercise) => filterDays.filter((d) => fitsDay(e, d)).map((d) => d.id)
+    const pool = all.filter((e) => {
+      if ((view === 'archived') !== !!e.archivedAt) return false
+      if (sources.length > 0 && !sources.includes(e.isCustom ? 'custom' : 'builtin')) return false
+      if (dayFilter.length > 0) {
+        const mine = dayOf(e)
+        const hit = dayFilter.includes(NO_DAY) ? mine.length === 0 : false
+        if (!hit && !mine.some((id) => dayFilter.includes(id))) return false
+      }
+      return true
+    })
     if (query.trim()) {
       // searchExercises hides archived ones, so search the archived pool by plain name match.
       return view === 'archived'
@@ -40,7 +60,9 @@ export function ExercisesPage() {
         : searchExercises(pool, query)
     }
     return [...pool].sort((a, b) => a.name.localeCompare(b.name))
-  }, [all, query, view])
+  }, [all, query, view, sources, dayFilter, filterDays])
+  const filtering = sources.length > 0 || dayFilter.length > 0
+  const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v])
   const archivedCount = all.filter((e) => e.archivedAt).length
 
   return (
@@ -81,37 +103,104 @@ export function ExercisesPage() {
         </button>
       </div>
 
-      {shown.length === 0 && <p className="hint">{query ? 'No match.' : 'Nothing here yet.'}</p>}
-      <ul className="list card" aria-label="Exercises">
-        {shown.map((e) => {
-          const u = usage?.get(e.id)
-          return (
-            <li key={e.id}>
-              <button type="button" className="list-btn" onClick={() => setEditing(e)}>
-                <span className="grow">
-                  <span className="list-title">
-                    {e.favorite ? '★ ' : ''}
-                    {e.name}
-                  </span>
-                  <span className="list-sub">
-                    {[
-                      e.equipmentType,
-                      e.muscleTags.slice(0, 3).join(', '),
-                      u ? `${u.sets} sets in ${u.workouts} ${u.workouts === 1 ? 'workout' : 'workouts'}` : 'never used',
-                      e.defaultRestSeconds ? `rest ${e.defaultRestSeconds}s` : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </span>
-                </span>
-                <span className="chev" aria-hidden="true">
-                  <IconChevronRight />
-                </span>
+      <div className="filters">
+        <div className="filter-group" role="group" aria-label="Origin">
+          <span className="filter-label">Origin</span>
+          <button
+            type="button"
+            className="chip"
+            aria-pressed={sources.includes('builtin')}
+            onClick={() => setSources((v) => toggle(v, 'builtin'))}
+          >
+            Built-in
+          </button>
+          <button
+            type="button"
+            className="chip"
+            aria-pressed={sources.includes('custom')}
+            onClick={() => setSources((v) => toggle(v, 'custom'))}
+          >
+            Added by me
+          </button>
+        </div>
+        {filterDays.length > 0 && (
+          <div className="filter-group" role="group" aria-label="Training day">
+            <span className="filter-label">Training day</span>
+            {filterDays.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                className="chip"
+                aria-pressed={dayFilter.includes(d.id)}
+                onClick={() => setDayFilter((v) => toggle(v, d.id))}
+              >
+                {d.name}
               </button>
-            </li>
-          )
-        })}
-      </ul>
+            ))}
+            <button
+              type="button"
+              className="chip"
+              aria-pressed={dayFilter.includes(NO_DAY)}
+              onClick={() => setDayFilter((v) => toggle(v, NO_DAY))}
+            >
+              No day
+            </button>
+          </div>
+        )}
+        {filtering && (
+          <div className="row-between">
+            <span className="small muted num">
+              {shown.length} {shown.length === 1 ? 'exercise' : 'exercises'}
+            </span>
+            <button
+              type="button"
+              className="btn ghost small"
+              onClick={() => {
+                setSources([])
+                setDayFilter([])
+              }}
+            >
+              Reset filters
+            </button>
+          </div>
+        )}
+      </div>
+
+      {shown.length === 0 && <p className="hint">{query || filtering ? 'No match.' : 'Nothing here yet.'}</p>}
+      {shown.length > 0 && (
+        <ul className="list card flush" aria-label="Exercises">
+          {shown.map((e) => {
+            const u = usage?.get(e.id)
+            return (
+              <li key={e.id}>
+                <button type="button" className="list-btn" onClick={() => setEditing(e)}>
+                  <span className="grow">
+                    <span className="list-title">
+                      {e.favorite ? '★ ' : ''}
+                      {e.name}
+                    </span>
+                    <span className="list-sub">
+                      {[
+                        e.equipmentType,
+                        e.muscleTags.slice(0, 3).join(', '),
+                        u
+                          ? `${u.sets} sets in ${u.workouts} ${u.workouts === 1 ? 'workout' : 'workouts'}`
+                          : 'never used',
+                        e.defaultRestSeconds ? `rest ${e.defaultRestSeconds}s` : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  </span>
+                  <span className="chev" aria-hidden="true">
+                    <IconChevronRight />
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
 
       <Sheet
         open={editing !== null}

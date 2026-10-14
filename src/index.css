@@ -3037,3 +3037,22 @@ table.data tbody tr:hover {
   background: var(--bg-sunken, rgba(127, 127, 127, 0.15));
   color: var(--text);
 }
+
+/* Exercise list filters: one labelled row of toggle chips per group. */
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.filter-label {
+  flex: 0 0 100%;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-2);
+}
