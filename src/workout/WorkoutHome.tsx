@@ -71,7 +71,7 @@ export function WorkoutHome() {
     const count = meta?.counts.get(r.id) ?? 0
     const last = meta?.lastUsed.get(r.id)
     return (
-      <li key={r.id} className="preset">
+      <li key={r.id} className="preset tile">
         <div className="grow">
           <div className="preset-name">{r.name}</div>
           <div className="small muted">
@@ -88,18 +88,22 @@ export function WorkoutHome() {
 
   return (
     <>
-      <div className="page-head">
-        <h1>Workout</h1>
-      </div>
-      <span className="overline page-date">
-        {new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).format(now)}
-      </span>
+      <header className="home-hero">
+        <span className="overline">
+          {new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' }).format(now)}
+        </span>
+        <h1>{greeting(new Date(now).getHours())}</h1>
+        <p className="secondary">Ready to train? Set up your session and get going.</p>
+      </header>
       <UpdateBanner />
       <BackupReminder />
 
-      <div className="card stack loose">
-        <div className="field">
-          <span className="field-label">Location</span>
+      <section className="card home-start stack loose" aria-labelledby="start-label">
+        <div className="home-start-head">
+          <div className="stack tight grow">
+            <span className="overline">Today’s workout</span>
+            <h2 id="start-label">{day ? `${day.name} day` : 'Free workout'}</h2>
+          </div>
           <button
             type="button"
             className={`chip lg ${location ? '' : 'warn'}`}
@@ -141,22 +145,30 @@ export function WorkoutHome() {
             </Link>
           </div>
         </div>
-      </div>
 
-      <section className="card stack" aria-labelledby="start-label">
-        <div className="stack tight">
-          <span className="overline">Start</span>
-          <h2 id="start-label">{day ? `${day.name} day` : 'Free workout'}</h2>
+        <div className="home-start-actions">
+          <button type="button" className="btn primary big" onClick={() => start({})}>
+            Start empty workout
+          </button>
+          <button type="button" className="btn big" onClick={() => setPickingExercises(true)}>
+            Pick exercises{day && !day.matchAll ? ` for ${day.name}` : ''}…
+          </button>
         </div>
+        <p className="hint">
+          You can always add, reorder, replace or skip exercises while training — including ones outside the day (they
+          get a coloured marker).
+        </p>
+      </section>
 
+      <section className="stack" aria-labelledby="presets-label">
+        <div className="section-head">
+          <h2 id="presets-label">Your presets{day ? ` for ${day.name}` : ''}</h2>
+        </div>
         {forDay.length > 0 ? (
-          <>
-            <p className="field-label">Your presets{day ? ` for ${day.name}` : ''}</p>
-            <ul className="stack plain-list preset-list">{forDay.map(presetRow)}</ul>
-          </>
+          <ul className="plain-list preset-grid">{forDay.map(presetRow)}</ul>
         ) : (
-          <p className="secondary">
-            No presets{day ? ` for ${day.name}` : ''} yet. Pick exercises below — after the workout you can save it as a
+          <p className="card secondary">
+            No presets{day ? ` for ${day.name}` : ''} yet. Pick exercises above — after the workout you can save it as a
             preset.
           </p>
         )}
@@ -164,20 +176,9 @@ export function WorkoutHome() {
         {forOtherDays.length > 0 && (
           <details>
             <summary>Presets from other days ({forOtherDays.length})</summary>
-            <ul className="stack plain-list preset-list">{forOtherDays.map(presetRow)}</ul>
+            <ul className="plain-list preset-grid">{forOtherDays.map(presetRow)}</ul>
           </details>
         )}
-
-        <button type="button" className="btn block dashed" onClick={() => setPickingExercises(true)}>
-          Pick exercises{day && !day.matchAll ? ` for ${day.name}` : ''}…
-        </button>
-        <button type="button" className="btn primary big" onClick={() => start({})}>
-          Start empty workout
-        </button>
-        <p className="hint">
-          You can always add, reorder, replace or skip exercises while training — including ones outside the day (they
-          get a coloured marker).
-        </p>
       </section>
 
       <LocationPicker
@@ -231,6 +232,12 @@ export function WorkoutHome() {
       </section>
     </>
   )
+}
+
+function greeting(hour: number) {
+  if (hour >= 5 && hour < 12) return 'Good morning'
+  if (hour >= 12 && hour < 18) return 'Good afternoon'
+  return 'Good evening'
 }
 
 function RecentItem(props: { sessionId: string; date: string; place: string | null; day: string | null }) {
