@@ -20,6 +20,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   restDefaultSeconds: 90,
   restVibrate: true,
   restSound: false,
+  swipeHistoryLeft: 'delete',
+  swipeHistoryRight: 'repeat',
+  swipePresetLeft: 'archive',
+  swipePresetRight: 'start',
 }
 
 export async function getSettings(): Promise<AppSettings> {

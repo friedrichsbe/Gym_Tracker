@@ -16,6 +16,11 @@ export type LightStyle = 'light' | 'glow'
 export type DarkStyle = 'dark' | 'midnight'
 export type AccentColor = 'teal' | 'blue' | 'orchid' | 'forest' | 'ember' | 'rose' | 'graphite'
 
+/** What a swipe on a workout in the history does. */
+export type HistorySwipeAction = 'none' | 'saveAsPreset' | 'updatePreset' | 'repeat' | 'export' | 'delete'
+/** What a swipe on a preset does. */
+export type PresetSwipeAction = 'none' | 'start' | 'edit' | 'duplicate' | 'archive'
+
 export type EquipmentType = 'machine' | 'dumbbell' | 'barbell' | 'cable' | 'bodyweight' | 'other'
 
 export type SetType = 'warmup' | 'working' | 'drop' | 'failure' | 'other'
@@ -208,6 +213,11 @@ export interface AppSettings {
   restDefaultSeconds: number
   restVibrate: boolean
   restSound: boolean
+  /** Swipe gestures on phones: "left" = finger moves to the left. */
+  swipeHistoryLeft: HistorySwipeAction
+  swipeHistoryRight: HistorySwipeAction
+  swipePresetLeft: PresetSwipeAction
+  swipePresetRight: PresetSwipeAction
 }
 
 export interface SchemaMetadata {

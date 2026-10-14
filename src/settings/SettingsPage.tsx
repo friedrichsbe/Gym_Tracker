@@ -5,6 +5,7 @@ import { UpdateBanner } from '../app/UpdateBanner'
 import { DayTypesPanel } from '../daytypes/DayTypesPanel'
 import { DataPanel } from '../portability/DataPanel'
 import { RestTimerPanel } from './RestTimerPanel'
+import { SwipePanel } from './SwipePanel'
 import { useLocations, useSettings } from '../data/hooks'
 import { updateSettings } from '../data/settings'
 import type { AccentColor, DarkStyle, LightStyle, Location, Theme, WeightUnit } from '../domain/types'
@@ -202,6 +203,8 @@ export function SettingsPage() {
       </section>
 
       <RestTimerPanel />
+
+      <SwipePanel />
 
       <section className="card stack" aria-labelledby="ex-manage">
         <h2 id="ex-manage">Exercises</h2>

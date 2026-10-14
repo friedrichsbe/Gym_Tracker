@@ -1,19 +1,21 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Link, useNavigate } from 'react-router-dom'
 import { db } from '../data/db'
-import { useDayTypes, useRoutines } from '../data/hooks'
-import type { Routine } from '../domain/types'
+import { useDayTypes, useRoutines, useSettings } from '../data/hooks'
+import type { PresetSwipeAction, Routine } from '../domain/types'
 import { suggestedLocationId } from '../locations/locationService'
 import { formatDate } from '../ui/format'
-import { IconList, IconPlus } from '../ui/icons'
+import { IconArchive, IconCopy, IconList, IconPencil, IconPlay, IconPlus } from '../ui/icons'
+import { SwipeRow, type SwipeAction } from '../ui/SwipeRow'
 import { useToast } from '../ui/toastContext'
 import { startWorkout } from '../workout/workoutService'
-import { duplicateRoutine, lastUsedByRoutine, unarchiveRoutine } from './routineService'
+import { archiveRoutine, duplicateRoutine, lastUsedByRoutine, unarchiveRoutine } from './routineService'
 
 export function RoutinesPage() {
   const { active, archived } = useRoutines()
   const { active: days } = useDayTypes()
-  const { guard } = useToast()
+  const { guard, show } = useToast()
+  const settings = useSettings()
   const navigate = useNavigate()
   const meta = useLiveQuery(async () => {
     const counts = new Map<string, number>()
@@ -30,39 +32,79 @@ export function RoutinesPage() {
     },
   ].filter((g) => g.items.length > 0)
 
+  const start = (r: Routine) =>
+    void guard(async () => {
+      await startWorkout({ routineId: r.id, locationId: await suggestedLocationId() })
+      navigate('/')
+    })
+
+  // Swipe shortcuts on touch screens, as chosen in Settings.
+  const swipe = (a: PresetSwipeAction, r: Routine, count: number): SwipeAction | undefined => {
+    switch (a) {
+      case 'none':
+        return undefined
+      case 'start':
+        return {
+          label: 'Start',
+          icon: <IconPlay />,
+          onTrigger: () => (count === 0 ? show('This preset has no exercises yet') : start(r)),
+        }
+      case 'edit':
+        return { label: 'Edit', icon: <IconPencil />, onTrigger: () => navigate(`/routines/${r.id}`) }
+      case 'duplicate':
+        return {
+          label: 'Duplicate',
+          icon: <IconCopy />,
+          onTrigger: () => void guard(async () => navigate(`/routines/${(await duplicateRoutine(r.id)).id}`)),
+        }
+      case 'archive':
+        return {
+          label: 'Archive',
+          icon: <IconArchive />,
+          danger: true,
+          onTrigger: () =>
+            void guard(async () => {
+              await archiveRoutine(r.id)
+              show(`“${r.name}” archived`, {
+                actionLabel: 'Undo',
+                onAction: () => void guard(() => unarchiveRoutine(r.id)),
+              })
+            }),
+        }
+    }
+  }
+
   const row = (r: Routine) => {
     const count = meta?.counts.get(r.id) ?? 0
     const last = meta?.lastUsed.get(r.id)
     return (
-      <li key={r.id} className="preset">
-        <Link to={`/routines/${r.id}`} className="grow link-reset">
-          <div className="preset-name">{r.name}</div>
-          <div className="small muted">
-            {count} {count === 1 ? 'exercise' : 'exercises'}
-            {last ? ` · last ${formatDate(last)}` : ' · never used'}
+      <li key={r.id}>
+        <SwipeRow
+          className="swipe-card"
+          left={swipe(settings.swipePresetLeft, r, count)}
+          right={swipe(settings.swipePresetRight, r, count)}
+        >
+          <div className="preset">
+            <Link to={`/routines/${r.id}`} className="grow link-reset">
+              <div className="preset-name">{r.name}</div>
+              <div className="small muted">
+                {count} {count === 1 ? 'exercise' : 'exercises'}
+                {last ? ` · last ${formatDate(last)}` : ' · never used'}
+              </div>
+            </Link>
+            <button
+              type="button"
+              className="btn ghost small"
+              aria-label={`Duplicate ${r.name}`}
+              onClick={() => void guard(async () => navigate(`/routines/${(await duplicateRoutine(r.id)).id}`))}
+            >
+              Copy
+            </button>
+            <button type="button" className="btn primary small" disabled={count === 0} onClick={() => start(r)}>
+              Start
+            </button>
           </div>
-        </Link>
-        <button
-          type="button"
-          className="btn ghost small"
-          aria-label={`Duplicate ${r.name}`}
-          onClick={() => void guard(async () => navigate(`/routines/${(await duplicateRoutine(r.id)).id}`))}
-        >
-          Copy
-        </button>
-        <button
-          type="button"
-          className="btn primary small"
-          disabled={count === 0}
-          onClick={() =>
-            void guard(async () => {
-              await startWorkout({ routineId: r.id, locationId: await suggestedLocationId() })
-              navigate('/')
-            })
-          }
-        >
-          Start
-        </button>
+        </SwipeRow>
       </li>
     )
   }

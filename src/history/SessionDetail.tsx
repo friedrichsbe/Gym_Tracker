@@ -5,8 +5,6 @@ import { RecordsList } from '../analytics/RecordsList'
 import { CardioSection } from '../cardio/CardioSection'
 import { loadCardio } from '../cardio/cardioService'
 import { useDayTypes, useRoutines } from '../data/hooks'
-import { deliver, exportCsvZip, exportJsonFile } from '../portability/exportData'
-import { createRoutineFromSession, saveRoutine, updateRoutineFromSession } from '../routines/routineService'
 import { formatDate, formatDurationShort, formatTime, formatVolume } from '../ui/format'
 import { SupersetFrame } from '../workout/SupersetFrame'
 import { toBlocks } from '../workout/supersets'
@@ -33,6 +31,7 @@ import {
 import { ExercisePicker } from '../exercises/ExercisePicker'
 import type { WorkoutExercise } from '../domain/types'
 import { PastSetRow } from './PastSetRow'
+import { useSessionActions } from './sessionActions'
 import { SessionDetailsForm } from './SessionDetailsForm'
 import { minutesBetween } from './sessionTime'
 import {
@@ -44,29 +43,19 @@ import {
 } from './sessionEditService'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
-import {
-  deleteSession,
-  getActiveSession,
-  loadSessionView,
-  startWorkout,
-  summarizeSession,
-  updateSessionNotes,
-} from '../workout/workoutService'
+import { loadSessionView, summarizeSession, updateSessionNotes } from '../workout/workoutService'
 
 export function SessionDetailPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { guard, show } = useToast()
+  const { guard } = useToast()
   const { active: days, archived: archivedDays } = useDayTypes()
   const view = useLiveQuery(() => loadSessionView(id), [id])
   const summary = useLiveQuery(() => summarizeSession(id), [id])
   const cardio = useLiveQuery(() => loadCardio(id), [id]) ?? []
   const { active: routines } = useRoutines()
-  const [saving, setSaving] = useState(false)
-  const [updatingPreset, setUpdatingPreset] = useState(false)
-  const [exporting, setExporting] = useState(false)
-  const [deleting, setDeleting] = useState(false)
+  const actions = useSessionActions({ onDeleted: () => navigate('/history') })
   const [editingDetails, setEditingDetails] = useState(false)
   const [pickingExercise, setPickingExercise] = useState(false)
   // Each input zone can be folded away to focus on the others.
@@ -142,7 +131,7 @@ export function SessionDetailPage() {
           <p className="secondary small">
             Next time you train this day you can start from exactly this workout — and still change anything.
           </p>
-          <button type="button" className="btn primary self-start" onClick={() => setSaving(true)}>
+          <button type="button" className="btn primary self-start" onClick={() => actions.run('saveAsPreset', session)}>
             Save as preset
           </button>
         </div>
@@ -365,7 +354,7 @@ export function SessionDetailPage() {
             type="button"
             className="action-tile"
             disabled={performed.length === 0}
-            onClick={() => setSaving(true)}
+            onClick={() => actions.run('saveAsPreset', session)}
           >
             <span className="action-icon">
               <IconStar />
@@ -377,7 +366,7 @@ export function SessionDetailPage() {
             type="button"
             className="action-tile"
             disabled={performed.length === 0 || routines.length === 0}
-            onClick={() => setUpdatingPreset(true)}
+            onClick={() => actions.run('updatePreset', session)}
           >
             <span className="action-icon">
               <IconRefresh />
@@ -389,17 +378,7 @@ export function SessionDetailPage() {
             type="button"
             className="action-tile"
             disabled={performed.length === 0}
-            onClick={() =>
-              void guard(async () => {
-                if (await getActiveSession()) throw new Error('Finish your current workout first')
-                await startWorkout({
-                  dayTypeId: session.dayTypeId,
-                  locationId: session.locationId,
-                  ...repeatPlan(performed.map((p) => p.we)),
-                })
-                navigate('/')
-              })
-            }
+            onClick={() => actions.run('repeat', session)}
           >
             <span className="action-icon">
               <IconRepeat />
@@ -407,7 +386,7 @@ export function SessionDetailPage() {
             <span className="action-label">Repeat</span>
             <span className="action-sub">Start it again now</span>
           </button>
-          <button type="button" className="action-tile" onClick={() => setExporting(true)}>
+          <button type="button" className="action-tile" onClick={() => actions.run('export', session)}>
             <span className="action-icon">
               <IconShare />
             </span>
@@ -416,102 +395,17 @@ export function SessionDetailPage() {
           </button>
         </div>
 
-        <button type="button" className="btn ghost danger-text small self-center" onClick={() => setDeleting(true)}>
+        <button
+          type="button"
+          className="btn ghost danger-text small self-center"
+          onClick={() => actions.run('delete', session)}
+        >
           <IconTrash />
           Delete workout…
         </button>
       </div>
 
-      <SaveAsPresetSheet
-        open={saving}
-        onClose={() => setSaving(false)}
-        defaultName={`${session.dayTypeNameSnapshot ?? 'Workout'} ${formatDate(session.startedAt)}`}
-        defaultDay={session.dayTypeId}
-        days={days}
-        onSave={(name, dayTypeId) =>
-          void guard(async () => {
-            const r = await createRoutineFromSession(session.id, { name, dayTypeId })
-            show(`Preset “${r.name}” saved`, { actionLabel: 'Edit', onAction: () => navigate(`/routines/${r.id}`) })
-            setSaving(false)
-          })
-        }
-      />
-
-      <Sheet open={updatingPreset} title="Update a preset" onClose={() => setUpdatingPreset(false)}>
-        <p className="secondary small">
-          The preset keeps its name and day, but its exercises become what you did here: order, set counts, rep range
-          and supersets. You can undo right afterwards.
-        </p>
-        <ul className="list card flush">
-          {[...routines]
-            .sort((a, b) => Number(b.id === session.routineId) - Number(a.id === session.routineId))
-            .map((r) => (
-              <li key={r.id}>
-                <button
-                  type="button"
-                  className="session-item"
-                  onClick={() =>
-                    void guard(async () => {
-                      const previous = await updateRoutineFromSession(session.id, r.id)
-                      setUpdatingPreset(false)
-                      show(`Preset “${r.name}” updated`, {
-                        actionLabel: 'Undo',
-                        onAction: () =>
-                          void guard(() =>
-                            saveRoutine(r.id, {
-                              name: r.name,
-                              dayTypeId: r.dayTypeId,
-                              notes: r.notes,
-                              exercises: previous,
-                            }),
-                          ),
-                      })
-                    })
-                  }
-                >
-                  <div>
-                    <div className="session-title">{r.name}</div>
-                    {r.id === session.routineId && <div className="small muted">Started from this preset</div>}
-                  </div>
-                </button>
-              </li>
-            ))}
-        </ul>
-      </Sheet>
-
-      <Sheet open={exporting} title="Export this workout" onClose={() => setExporting(false)}>
-        <p className="secondary small">
-          Only this workout, with the exercises and gym it refers to. This is not a backup — it does not reset the
-          backup reminder. The JSON file can be imported again (merge).
-        </p>
-        <button
-          type="button"
-          className="btn primary block"
-          onClick={() =>
-            void guard(async () => {
-              await deliver(await exportJsonFile('gym-tracker-workout', { sessionId: session.id }), {
-                share: true,
-                isBackup: false,
-              })
-              setExporting(false)
-            })
-          }
-        >
-          JSON file
-        </button>
-        <button
-          type="button"
-          className="btn block"
-          onClick={() =>
-            void guard(async () => {
-              await deliver(await exportCsvZip({ sessionId: session.id }), { share: true, isBackup: false })
-              setExporting(false)
-            })
-          }
-        >
-          CSV (ZIP)
-        </button>
-      </Sheet>
+      {actions.sheets}
 
       <Sheet open={editingDetails} title="Edit workout details" onClose={() => setEditingDetails(false)}>
         <p className="secondary small">
@@ -602,91 +496,7 @@ export function SessionDetailPage() {
           Cancel
         </button>
       </Sheet>
-
-      <Sheet open={deleting} title="Delete this workout?" onClose={() => setDeleting(false)}>
-        <p>
-          This permanently removes the workout of {formatDate(session.startedAt)} with all its sets. It cannot be undone
-          — export a backup first if you are unsure.
-        </p>
-        <button
-          type="button"
-          className="btn danger solid block"
-          onClick={() =>
-            void guard(async () => {
-              await deleteSession(session.id)
-              show('Workout deleted')
-              navigate('/history')
-            })
-          }
-        >
-          Delete permanently
-        </button>
-        <button type="button" className="btn block" onClick={() => setDeleting(false)}>
-          Cancel
-        </button>
-      </Sheet>
     </main>
-  )
-}
-
-function SaveAsPresetSheet(props: {
-  open: boolean
-  onClose: () => void
-  defaultName: string
-  defaultDay: string | null
-  days: { id: string; name: string }[]
-  onSave: (name: string, dayTypeId: string | null) => void
-}) {
-  return (
-    <Sheet open={props.open} title="Save as preset" onClose={props.onClose}>
-      <PresetForm {...props} />
-    </Sheet>
-  )
-}
-
-function PresetForm({
-  defaultName,
-  defaultDay,
-  days,
-  onSave,
-}: {
-  defaultName: string
-  defaultDay: string | null
-  days: { id: string; name: string }[]
-  onSave: (name: string, dayTypeId: string | null) => void
-}) {
-  const [name, setName] = useState(defaultName)
-  const [day, setDay] = useState<string | null>(defaultDay)
-  return (
-    <form
-      className="stack"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (name.trim()) onSave(name.trim(), day)
-      }}
-    >
-      <p className="secondary small">
-        Uses the exercises you actually did, with your set counts and rep range (warm-ups are not counted as sets).
-      </p>
-      <div className="field">
-        <label htmlFor="p-name">Name</label>
-        <input id="p-name" type="text" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />
-      </div>
-      <div className="field">
-        <label htmlFor="p-day">Day</label>
-        <select id="p-day" value={day ?? ''} onChange={(e) => setDay(e.target.value || null)}>
-          <option value="">Any day</option>
-          {days.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <button type="submit" className="btn primary" disabled={!name.trim()}>
-        Save preset
-      </button>
-    </form>
   )
 }
 
@@ -702,18 +512,4 @@ function ZoneToggle({ open, onToggle }: { open: boolean; onToggle: () => void })
       <IconChevronDown />
     </button>
   )
-}
-
-/** Exercise ids in order (each once) plus their superset keys, so a repeated workout keeps its supersets. */
-function repeatPlan(wes: { performedExerciseId: string; supersetGroupId?: string | null }[]) {
-  const seen = new Set<string>()
-  const exerciseIds: string[] = []
-  const supersetKeys: (string | null)[] = []
-  for (const we of wes) {
-    if (seen.has(we.performedExerciseId)) continue
-    seen.add(we.performedExerciseId)
-    exerciseIds.push(we.performedExerciseId)
-    supersetKeys.push(we.supersetGroupId ?? null)
-  }
-  return { exerciseIds, supersetKeys }
 }

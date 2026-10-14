@@ -136,6 +136,9 @@ export const sessionSchema = z.object({
   cardio: z.array(cardioSchema).max(100).default([]),
 })
 
+const historySwipe = z.enum(['none', 'saveAsPreset', 'updatePreset', 'repeat', 'export', 'delete'])
+const presetSwipe = z.enum(['none', 'start', 'edit', 'duplicate', 'archive'])
+
 export const settingsSchema = z
   .object({
     units: unit,
@@ -153,6 +156,10 @@ export const settingsSchema = z
     restDefaultSeconds: z.number().int().min(5).max(1800),
     restVibrate: z.boolean(),
     restSound: z.boolean(),
+    swipeHistoryLeft: historySwipe,
+    swipeHistoryRight: historySwipe,
+    swipePresetLeft: presetSwipe,
+    swipePresetRight: presetSwipe,
   })
   .partial()
 

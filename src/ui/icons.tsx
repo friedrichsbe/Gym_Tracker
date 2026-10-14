@@ -163,3 +163,20 @@ export const IconChevronDown = () => (
     <path d="m6 9 6 6 6-6" />
   </svg>
 )
+export const IconPlay = () => (
+  <svg {...base} width={20} height={20}>
+    <path d="M7 4.5v15l12.5-7.5L7 4.5Z" />
+  </svg>
+)
+export const IconCopy = () => (
+  <svg {...base} width={20} height={20}>
+    <rect x="8" y="8" width="12" height="12" rx="2" />
+    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+  </svg>
+)
+export const IconArchive = () => (
+  <svg {...base} width={20} height={20}>
+    <rect x="3" y="4" width="18" height="5" rx="1.5" />
+    <path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4" />
+  </svg>
+)

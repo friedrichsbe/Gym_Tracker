@@ -2,12 +2,15 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { db } from '../data/db'
-import { useDayTypes, useLocations } from '../data/hooks'
+import { useDayTypes, useLocations, useSettings } from '../data/hooks'
 import { instant } from '../domain/time'
+import type { HistorySwipeAction, WorkoutSession } from '../domain/types'
 import { formatDate, formatDurationShort, formatVolume } from '../ui/format'
 import { DateField } from '../ui/DateField'
 import { IconCalendar, IconPlus } from '../ui/icons'
+import { SwipeRow, type SwipeAction } from '../ui/SwipeRow'
 import { PastWorkoutSheet } from './PastWorkoutSheet'
+import { SESSION_ACTIONS, useSessionActions } from './sessionActions'
 import { summarizeSession } from '../workout/workoutService'
 
 export function HistoryPage() {
@@ -21,6 +24,14 @@ export function HistoryPage() {
   const [to, setTo] = useState('')
   const route = useLocation()
   const navigate = useNavigate()
+  const settings = useSettings()
+  const actions = useSessionActions()
+  // Swipe shortcuts on touch screens, as chosen in Settings.
+  const swipe = (a: HistorySwipeAction, session: WorkoutSession): SwipeAction | undefined => {
+    if (a === 'none') return undefined
+    const { label, icon: Icon, danger } = SESSION_ACTIONS[a]
+    return { label, icon: <Icon />, danger, onTrigger: () => actions.run(a, session) }
+  }
   // Set by "Save & finish": the workout just logged gently pulses once so it's easy to spot.
   const highlight = (route.state as { highlight?: string } | null)?.highlight ?? null
   useEffect(() => {
@@ -171,11 +182,13 @@ export function HistoryPage() {
               {m.items.length} {m.items.length === 1 ? 'workout' : 'workouts'}
             </span>
           </div>
-          <ul className="list card flush">
+          <ul className="list card flush swipe-list">
             {m.items.map((s) => (
               <Row
                 key={s.id}
                 id={s.id}
+                left={swipe(settings.swipeHistoryLeft, s)}
+                right={swipe(settings.swipeHistoryRight, s)}
                 date={formatDate(s.startedAt)}
                 title={[s.dayTypeNameSnapshot, s.routineNameSnapshot].filter(Boolean).join(' · ') || 'Workout'}
                 place={s.locationNameSnapshot}
@@ -185,11 +198,20 @@ export function HistoryPage() {
           </ul>
         </section>
       ))}
+      {actions.sheets}
     </main>
   )
 }
 
-function Row(props: { id: string; date: string; title: string; place: string | null; highlight?: boolean }) {
+function Row(props: {
+  id: string
+  date: string
+  title: string
+  place: string | null
+  highlight?: boolean
+  left?: SwipeAction
+  right?: SwipeAction
+}) {
   const summary = useLiveQuery(() => summarizeSession(props.id), [props.id])
   const ref = useRef<HTMLAnchorElement>(null)
   useEffect(() => {
@@ -197,27 +219,29 @@ function Row(props: { id: string; date: string; title: string; place: string | n
   }, [props.highlight])
   return (
     <li>
-      <Link
-        ref={ref}
-        to={`/history/${props.id}`}
-        className={`session-item ${props.highlight ? 'just-saved' : ''}`}
-        aria-description={props.highlight ? 'Just saved' : undefined}
-      >
-        <div>
-          <div className="session-title">{props.date}</div>
-          <div className="small muted">
-            {props.title} · {props.place ?? 'No location'}
+      <SwipeRow left={props.left} right={props.right}>
+        <Link
+          ref={ref}
+          to={`/history/${props.id}`}
+          className={`session-item ${props.highlight ? 'just-saved' : ''}`}
+          aria-description={props.highlight ? 'Just saved' : undefined}
+        >
+          <div>
+            <div className="session-title">{props.date}</div>
+            <div className="small muted">
+              {props.title} · {props.place ?? 'No location'}
+            </div>
           </div>
-        </div>
-        {summary && (
-          <div className="meta num">
-            {summary.completedSets} {summary.completedSets === 1 ? 'set' : 'sets'}
-            <br />
-            {summary.durationSeconds != null ? formatDurationShort(summary.durationSeconds) : ''}
-            {Object.keys(summary.volume).length > 0 && <> · {formatVolume(summary.volume)}</>}
-          </div>
-        )}
-      </Link>
+          {summary && (
+            <div className="meta num">
+              {summary.completedSets} {summary.completedSets === 1 ? 'set' : 'sets'}
+              <br />
+              {summary.durationSeconds != null ? formatDurationShort(summary.durationSeconds) : ''}
+              {Object.keys(summary.volume).length > 0 && <> · {formatVolume(summary.volume)}</>}
+            </div>
+          )}
+        </Link>
+      </SwipeRow>
     </li>
   )
 }
