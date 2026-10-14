@@ -10,12 +10,12 @@ const out = (p) => new URL(`../public/${p}`, import.meta.url)
 const CX = 967
 const CY = 967
 
-function mark(weight) {
+function mark(weight, paint = 'url(#bronze)') {
   const w = (n) => (n * weight).toFixed(1)
   return `
-    <g fill="url(#bronze)" stroke="url(#bronze)" stroke-linejoin="miter">
+    <g fill="${paint}" stroke="${paint}" stroke-linejoin="miter">
       <g fill="none" stroke-width="${w(52)}">
-        <path d="M 590 1305 L 1000 1305 C 1235 1305 1345 1150 1322 950 C 1311 860 1282 792 1236 748"/>
+        <path d="M 590 1305 L 1000 1305 C 1235 1305 1345 1150 1322 950 C 1311 870 1294 818 1264 778"/>
         <path d="M 590 1305 C 800 1295 905 1180 1000 1050 C 1100 915 1170 690 1352 632"/>
         <path stroke-width="${w(44)}" d="M 950 623 C 1040 625 1110 643 1163 676"/>
       </g>
@@ -26,6 +26,19 @@ function mark(weight) {
         <path d="M 795 940 H 950 L 915 992 H 795 Z"/>
       </g>
     </g>`
+}
+
+// Layered relief: cast shadow, copper side wall, bronze face, champagne top-left edge, copper bottom-right chamfer.
+function relief(weight, fancy) {
+  if (!fancy) return mark(weight)
+  const m = mark(weight, '#000')
+  return `
+    <g filter="url(#cast)">${m}</g>
+    <g filter="url(#contact)">${m}</g>
+    <g transform="translate(4 6)">${mark(weight, 'url(#copper)')}</g>
+    ${mark(weight)}
+    <g filter="url(#lit)">${m}</g>
+    <g filter="url(#chamfer)" opacity=".9">${m}</g>`
 }
 
 function svg({ rounded, scale, weight = 1, shadow = true }) {
@@ -44,16 +57,44 @@ function svg({ rounded, scale, weight = 1, shadow = true }) {
       <stop offset="1" stop-color="#b08a6e" stop-opacity=".25"/>
     </linearGradient>
     <linearGradient id="bronze" gradientUnits="userSpaceOnUse" x1="640" y1="620" x2="1280" y2="1340">
-      <stop offset="0" stop-color="#e3d6ca"/>
-      <stop offset=".45" stop-color="#b9a190"/>
-      <stop offset="1" stop-color="#85604a"/>
+      <stop offset="0" stop-color="#d9c8ba"/>
+      <stop offset=".35" stop-color="#c2ad9d"/>
+      <stop offset=".5" stop-color="#d3c1b2"/>
+      <stop offset=".7" stop-color="#a68f80"/>
+      <stop offset="1" stop-color="#8a6a58"/>
     </linearGradient>
+    <linearGradient id="copper" gradientUnits="userSpaceOnUse" x1="640" y1="620" x2="1280" y2="1340">
+      <stop offset="0" stop-color="#c99a7c"/>
+      <stop offset="1" stop-color="#6e4634"/>
+    </linearGradient>
+    <filter id="cast" x="-20%" y="-20%" width="150%" height="150%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="18"/>
+      <feOffset dx="12" dy="26"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".85"/></feComponentTransfer>
+    </filter>
+    <filter id="contact" x="-10%" y="-10%" width="130%" height="130%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
+      <feOffset dx="4" dy="9"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".7"/></feComponentTransfer>
+    </filter>
+    <filter id="lit" x="-5%" y="-5%" width="110%" height="110%">
+      <feOffset in="SourceAlpha" dx="5" dy="5" result="o"/>
+      <feComposite in="SourceAlpha" in2="o" operator="out" result="edge"/>
+      <feFlood flood-color="#fbeee2"/>
+      <feComposite in2="edge" operator="in"/>
+    </filter>
+    <filter id="chamfer" x="-5%" y="-5%" width="110%" height="110%">
+      <feOffset in="SourceAlpha" dx="-5" dy="-5" result="o"/>
+      <feComposite in="SourceAlpha" in2="o" operator="out" result="edge"/>
+      <feFlood flood-color="#b9785a"/>
+      <feComposite in2="edge" operator="in"/>
+    </filter>
     <filter id="drop" x="-20%" y="-20%" width="140%" height="150%">
       <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity=".5"/>
     </filter>
   </defs>
   ${bg}
-  <g transform="translate(512 512) scale(${scale}) translate(${-CX} ${-CY})"${shadow ? ' filter="url(#drop)"' : ''}>${mark(weight)}
+  <g transform="translate(512 512) scale(${scale}) translate(${-CX} ${-CY})">${relief(weight, shadow)}
   </g>
 </svg>
 `
