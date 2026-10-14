@@ -1,12 +1,11 @@
 import { db } from '../data/db'
-import { getSettings } from '../data/settings'
 import { instant } from '../domain/time'
 import type { SetRecord, WeightUnit, WorkoutExercise } from '../domain/types'
 import { toKg } from './analytics'
 
 // Personal records of one workout. A record is only reported when there is earlier history to beat
 // (the first time you do an exercise is a start, not a record) and only against sets from the same
-// location, because loads on different machines are not directly comparable (PRD F7).
+// location (warm-ups never count, whatever the stats setting says), because loads on different machines are not directly comparable (PRD F7).
 
 export type RecordKind = 'weight' | 'volume' | 'reps'
 
@@ -31,8 +30,8 @@ export interface RecordSet {
 const weighted = (s: SetRecord) => s.loadType === 'weight' && s.weightValue != null && s.weightValue > 0
 
 /** Pure core: `current` = sets of the workout, `prior` = earlier completed sets of the same exercises. */
-export function findRecords(current: RecordSet[], prior: RecordSet[], opts: { includeWarmups: boolean }): PersonalRecord[] {
-  const counts = (s: SetRecord) => s.isCompleted && (opts.includeWarmups || s.setType !== 'warmup') && (s.reps ?? 0) > 0
+export function findRecords(current: RecordSet[], prior: RecordSet[]): PersonalRecord[] {
+  const counts = (s: SetRecord) => s.isCompleted && s.setType !== 'warmup' && (s.reps ?? 0) > 0
   const key = (r: RecordSet) => `${r.exerciseId}|${r.set.locationId ?? ''}`
 
   const best = new Map<string, { weight: number; volume: number; reps: number; any: boolean }>()
@@ -91,7 +90,6 @@ export function findRecords(current: RecordSet[], prior: RecordSet[], opts: { in
 export async function sessionRecords(sessionId: string): Promise<PersonalRecord[]> {
   const session = await db.sessions.get(sessionId)
   if (!session) return []
-  const { includeWarmupsInStats } = await getSettings()
   const instances = await db.workoutExercises.where('sessionId').equals(sessionId).toArray()
   const exerciseIds = new Set(instances.map((i) => i.performedExerciseId))
   const mine = (await db.sets.where('sessionId').equals(sessionId).toArray()).filter((s) => s.isCompleted)
@@ -107,9 +105,12 @@ export async function sessionRecords(sessionId: string): Promise<PersonalRecord[
     (s) => s.id !== sessionId && instant(s.startedAt) < instant(session.startedAt),
   )
   const earlierIds = new Set(earlier.map((s) => s.id))
-  const priorInstances = (await db.workoutExercises.where('performedExerciseId').anyOf([...exerciseIds]).toArray()).filter(
-    (i) => earlierIds.has(i.sessionId),
-  )
+  const priorInstances = (
+    await db.workoutExercises
+      .where('performedExerciseId')
+      .anyOf([...exerciseIds])
+      .toArray()
+  ).filter((i) => earlierIds.has(i.sessionId))
   const priorOf = new Map(priorInstances.map((i) => [i.id, i]))
   const prior: RecordSet[] = []
   for (const i of priorInstances) {
@@ -118,10 +119,14 @@ export async function sessionRecords(sessionId: string): Promise<PersonalRecord[
       prior.push({ set, exerciseId: we.performedExerciseId, name: we.performedNameSnapshot })
     }
   }
-  return findRecords(current, prior, { includeWarmups: includeWarmupsInStats })
+  return findRecords(current, prior)
 }
 
 export const describeRecord = (r: PersonalRecord): string => {
   const load = r.weight != null ? `${r.weight} ${r.unit} × ${r.reps}` : `${r.reps} reps`
-  return r.kind === 'weight' ? `Heaviest set · ${load}` : r.kind === 'volume' ? `Best set volume · ${load}` : `Most reps · ${load}`
+  return r.kind === 'weight'
+    ? `Heaviest set · ${load}`
+    : r.kind === 'volume'
+      ? `Best set volume · ${load}`
+      : `Most reps · ${load}`
 }

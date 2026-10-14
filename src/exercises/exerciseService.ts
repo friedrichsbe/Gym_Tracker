@@ -210,6 +210,10 @@ function cleanAliases(aliases: string[], name: string): string[] {
  * Edit an exercise. Past workouts keep working: sets point at the id and sessions keep their own name
  * snapshot, so a rename never rewrites history (use merge to unify two entries).
  */
+export async function setFavorite(id: string, favorite: boolean): Promise<void> {
+  await db.exercises.update(id, { favorite: favorite || undefined, updatedAt: nowIso() })
+}
+
 export async function updateExercise(
   id: string,
   patch: {

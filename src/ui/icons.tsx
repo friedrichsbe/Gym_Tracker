@@ -51,6 +51,11 @@ export const IconChart = () => (
     <path d="m5 15 4-4 3.5 3L19 7.5" />
   </svg>
 )
+export const IconStar = ({ filled = false }: { filled?: boolean }) => (
+  <svg {...base} width={20} height={20} fill={filled ? 'currentColor' : 'none'}>
+    <path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8L12 3.5Z" />
+  </svg>
+)
 export const IconPlus = () => (
   <svg {...base} width={18} height={18}>
     <path d="M12 5v14M5 12h14" />

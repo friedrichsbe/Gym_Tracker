@@ -170,6 +170,35 @@ picker during a workout — it is classified in one place:
   time, so it stays correct when the phone sleeps or the app is reopened.
 - Optional vibration and sound at the end (only while the app is open — web apps cannot ring in the background).
 
+### F29 — Records, filters, effort and presets from workouts ✅
+- **Personal records:** the finish sheet and every workout in History list new records (heaviest set; best set volume when
+  the weight itself was not beaten; most reps for exercises without external load). Only earlier workouts **at the same
+  location** are compared, the first time an exercise is done is never a record, warm-ups never count, and a back-filled
+  old workout is compared only with what came before it.
+- **Time range** (1 M / 3 M / 6 M / 1 Y / All) for the exercise progress chart and its session table; the records box
+  always shows all time.
+- **Export this workout** (JSON or CSV ZIP) from the workout detail. It contains only that workout and what it refers to,
+  can be imported again, and does **not** reset the backup reminder.
+- **History filters:** exercise and date range (from / to) in addition to day and location, with a count and "Clear filters".
+- **RPE / RIR / set note** in the set options sheet (running and finished workouts). Tapping the active value clears it;
+  sets that carry any of them show a dot (running) or "RPE 8 · RIR 2" (history).
+- **Update an existing preset** from a workout: the preset keeps its name, day and notes; its exercises become what was done
+  (order, set counts, rep range, supersets; notes of remaining exercises are kept). Undo is offered right after.
+
+### F30 — Safety net, favorites, filters and insights ✅
+- **Storage guard:** a red banner if the browser refuses to store data (e.g. private mode) or the device is >90 % full; the
+  app asks the browser for persistent storage so data is not evicted under pressure.
+- **Multi-tab warning:** opening the app in a second tab or window shows a notice in both.
+- **Undo for "Remove from workout"** restores the exercise at its old position with its sets and superset.
+- **Favorites:** star in the exercise picker or the exercise editor; favorites are listed first when picking.
+- **Picker filters:** equipment, muscle and "favorites only".
+- **Estimated 1RM** (Epley, only loaded sets of 1–12 reps, always labelled as an estimate) as a chart metric.
+- **Insights tab:** workouts per week (bars, 4/8/12 weeks, average over finished weeks) and counted sets per muscle group
+  per week. Counts only — no scores.
+- Not built on purpose: a backup before schema migrations (all migrations so far are additive and tested; the backup
+  reminder and "before restore" export cover the real risks), unilateral exercises, preset versioning (F15), desktop
+  table mode (F16).
+
 ### Carried over unchanged from the original PRD (built) ✅
 F1 logging (autosave, recovery of the active workout after reload, undo for deleted sets), F2 locations at set level,
 F4 catalogue + custom exercises (alias search, typo tolerant), F5 substitution (logged sets stay with the exercise
@@ -230,8 +259,8 @@ user-controlled updates.
 | F9 | Offline PWA | ✅ (to verify on device) |
 | F10 | Backup workflow | ✅ |
 | F11 | Rest timer | ✅ (F28) |
-| F12 | Advanced set metadata (RPE/RIR/tempo) | 🟡 stored/validated in the model, no input UI |
-| F13 | Better analytics (e1RM, weekly volume per muscle, frequency) | ⬜ |
+| F12 | Advanced set metadata (RPE/RIR/tempo) | 🟡 RPE, RIR and note have input (F29); tempo not planned |
+| F13 | Better analytics (e1RM, weekly volume per muscle, frequency) | ✅ (F30) |
 | F14 | Markdown importer | dropped |
 | F15 | Routine versioning, alternatives | ⬜ |
 | F16 | Desktop analysis view | 🟡 responsive layout with sidebar; no table/keyboard mode |
@@ -239,8 +268,6 @@ user-controlled updates.
 ## 6. Backlog / next ideas (not committed)
 
 1. Real-device pass on the Samsung phone (tap sizes of heatmap squares, one-handed logging, airplane mode, install).
-3. RPE/RIR input behind progressive disclosure — F12.
-4. Estimated 1RM (labelled, formula shown), weekly volume per muscle group, training frequency — F13.
 6. German UI / string table.
 7. Optional machine identifier below location level.
 8. Desktop table view and keyboard shortcuts — F16.
@@ -263,6 +290,11 @@ user-controlled updates.
 28. Rename an exercise and merge a duplicate: old workouts keep their names until merged; after the merge they form one series.
 29. Rest timer starts after working sets only, per-exercise rest is honoured, and a superset rests once per round.
 30. Closing and reopening the app during a rest shows the correct time left.
+31. A heavier set than any earlier one at the same gym is shown as a record when finishing; the first time is not.
+32. Exporting a single workout produces a file that imports again without touching other data.
+33. Updating a preset from a workout can be undone.
+34. Removing an exercise from a running workout can be undone, including its superset.
+35. A second open tab is flagged; a browser that blocks storage is flagged.
 
 ## 8. Glossary
 

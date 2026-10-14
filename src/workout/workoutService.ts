@@ -627,16 +627,50 @@ export async function moveExercise(workoutExerciseId: string, direction: -1 | 1)
   })
 }
 
-/** Only allowed while nothing was logged for it; otherwise use skip/substitute. */
-export async function removeExercise(workoutExerciseId: string): Promise<void> {
-  await db.transaction('rw', TABLES(), async () => {
+export interface RemovedExercise {
+  we: WorkoutExercise
+  sets: SetRecord[]
+  /** Other members of its superset at the time (a group of two dissolves when one is removed). */
+  groupPeers: string[]
+}
+
+/** Only allowed while nothing was logged for it; otherwise use skip/substitute. Returns what is needed for undo. */
+export async function removeExercise(workoutExerciseId: string): Promise<RemovedExercise | undefined> {
+  return db.transaction('rw', TABLES(), async () => {
     const we = await db.workoutExercises.get(workoutExerciseId)
-    if (!we) return
+    if (!we) return undefined
     await requireActive(we.sessionId)
     const sets = await db.sets.where('workoutExerciseId').equals(we.id).toArray()
     if (sets.some((s) => s.isCompleted)) throw new Error('Exercise has completed sets; skip it instead')
+    const groupPeers = we.supersetGroupId
+      ? (await db.workoutExercises.where('sessionId').equals(we.sessionId).toArray())
+          .filter((x) => x.id !== we.id && x.supersetGroupId === we.supersetGroupId)
+          .map((x) => x.id)
+      : []
     await db.sets.bulkDelete(sets.map((s) => s.id))
     await db.workoutExercises.delete(we.id)
+    await normalizePositions(we.sessionId)
+    await normalizeGroups(we.sessionId)
+    return { we, sets, groupPeers }
+  })
+}
+
+/** Undo of `removeExercise`: puts the exercise back at its old position (and superset, if that still exists). */
+export async function restoreExercise(removed: RemovedExercise): Promise<void> {
+  await db.transaction('rw', TABLES(), async () => {
+    const { we, sets } = removed
+    await requireActive(we.sessionId)
+    const list = await db.workoutExercises.where('sessionId').equals(we.sessionId).toArray()
+    const shifted = list.filter((x) => x.position >= we.position).map((x) => ({ ...x, position: x.position + 1 }))
+    if (shifted.length) await db.workoutExercises.bulkPut(shifted)
+    await db.workoutExercises.put({ ...we, position: Math.min(we.position, list.length) })
+    if (sets.length) await db.sets.bulkPut(sets)
+    if (we.supersetGroupId && removed.groupPeers.length) {
+      const peers = await db.workoutExercises.bulkGet(removed.groupPeers)
+      await db.workoutExercises.bulkPut(
+        peers.filter((p): p is WorkoutExercise => !!p).map((p) => ({ ...p, supersetGroupId: we.supersetGroupId })),
+      )
+    }
     await normalizePositions(we.sessionId)
     await normalizeGroups(we.sessionId)
   })

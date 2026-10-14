@@ -11,6 +11,7 @@ import { useToast } from '../ui/toastContext'
 import {
   archiveExercise,
   createCustomExercise,
+  setFavorite,
   exerciseUsage,
   mergeExercises,
   previewMerge,
@@ -88,7 +89,10 @@ export function ExercisesPage() {
             <li key={e.id}>
               <button type="button" className="list-btn" onClick={() => setEditing(e)}>
                 <span className="grow">
-                  <span className="list-title">{e.name}</span>
+                  <span className="list-title">
+                    {e.favorite ? '★ ' : ''}
+                    {e.name}
+                  </span>
                   <span className="list-sub">
                     {[
                       e.equipmentType,
@@ -149,6 +153,7 @@ function ExerciseForm({
     ? [...activeDays, ...archivedDays].filter((d) => d.exerciseIds.includes(existing.id)).map((d) => d.id)
     : []
   const [dayIdsEdit, setDayIdsEdit] = useState<string[] | null>(null)
+  const [favorite, setFavoriteFlag] = useState(!!existing?.favorite)
   const dayIds = dayIdsEdit ?? storedDayIds
   const u = existing ? usage?.get(existing.id) : undefined
 
@@ -173,6 +178,7 @@ function ExerciseForm({
                 defaultRestSeconds: restValue,
               })
               if (dayIdsEdit) await setExerciseDays(existing.id, dayIdsEdit)
+              if (favorite !== !!existing.favorite) await setFavorite(existing.id, favorite)
             } else {
               const { exercise, created } = await createCustomExercise({
                 name,
@@ -186,6 +192,7 @@ function ExerciseForm({
                 return
               }
               await setExerciseDays(exercise.id, dayIds)
+              if (favorite) await setFavorite(exercise.id, true)
             }
             onDone()
           })
@@ -219,6 +226,10 @@ function ExerciseForm({
           </select>
         </div>
         <ExerciseClassification muscles={muscles} onMuscles={setMuscles} dayIds={dayIds} onDayIds={setDayIdsEdit} />
+        <label className="check-row">
+          <input type="checkbox" checked={favorite} onChange={(e) => setFavoriteFlag(e.target.checked)} />
+          <span>Favorite (listed first when picking exercises)</span>
+        </label>
         <div className="field">
           <label htmlFor="e-rest">Rest after a set (seconds)</label>
           <input

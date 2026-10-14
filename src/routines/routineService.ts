@@ -127,10 +127,7 @@ export async function unarchiveRoutine(id: string): Promise<void> {
  * "Save this workout as a preset": takes what was actually performed (not what was
  * planned), in session order. Exercises without completed sets are left out.
  */
-export async function createRoutineFromSession(
-  sessionId: string,
-  input: { name: string; dayTypeId: string | null },
-): Promise<Routine> {
+async function itemsFromSession(sessionId: string): Promise<RoutineExerciseInput[]> {
   const wes = (await db.workoutExercises.where('sessionId').equals(sessionId).toArray()).sort(
     (a, b) => a.position - b.position,
   )
@@ -153,7 +150,45 @@ export async function createRoutineFromSession(
     })
   }
   if (byExercise.size === 0) throw new Error('This workout has no completed sets to save')
-  return createRoutine({ name: input.name, dayTypeId: input.dayTypeId, exercises: [...byExercise.values()] })
+  return [...byExercise.values()]
+}
+
+export async function createRoutineFromSession(
+  sessionId: string,
+  input: { name: string; dayTypeId: string | null },
+): Promise<Routine> {
+  return createRoutine({ name: input.name, dayTypeId: input.dayTypeId, exercises: await itemsFromSession(sessionId) })
+}
+
+/**
+ * "Update this preset from the workout": the preset keeps its name, day and notes, but its exercises become what
+ * was actually done (order, set counts, rep range, supersets). Notes of exercises that stay are kept.
+ * Returns the previous exercise list so the caller can offer undo.
+ */
+export async function updateRoutineFromSession(sessionId: string, routineId: string): Promise<RoutineExerciseInput[]> {
+  const routine = await db.routines.get(routineId)
+  if (!routine) throw new Error('Preset not found')
+  const before = await getRoutineExercises(routineId)
+  const previous: RoutineExerciseInput[] = before.map(
+    ({ id, exerciseId, suggestedSets, targetRepMin, targetRepMax, supersetGroup, notes }) => ({
+      id,
+      exerciseId,
+      suggestedSets,
+      targetRepMin,
+      targetRepMax,
+      supersetGroup,
+      notes,
+    }),
+  )
+  const oldNotes = new Map(before.map((r) => [r.exerciseId, r.notes]))
+  const items = (await itemsFromSession(sessionId)).map((it) => ({ ...it, notes: oldNotes.get(it.exerciseId) }))
+  await saveRoutine(routineId, {
+    name: routine.name,
+    dayTypeId: routine.dayTypeId,
+    notes: routine.notes,
+    exercises: items,
+  })
+  return previous
 }
 
 export async function lastUsedByRoutine(): Promise<Map<string, string>> {

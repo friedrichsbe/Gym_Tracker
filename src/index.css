@@ -2837,3 +2837,102 @@ table.data tbody tr:hover {
 .set-row.incomplete .num-input {
   border-color: var(--warning-border);
 }
+
+/* A set that carries RPE / RIR / a note shows a small dot on its badge. */
+.set-badge.has-detail {
+  position: relative;
+}
+.set-badge.has-detail::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* Personal records */
+.records {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.records li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.tag.record {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-weight: 700;
+}
+.filter-bar .span-2 {
+  grid-column: 1 / -1;
+}
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.pick-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.pick-item > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.star-btn[aria-pressed='true'] {
+  color: var(--accent);
+}
+.shell > .banner {
+  margin: var(--space-3) var(--space-4) 0;
+}
+@media (min-width: 900px) {
+  .shell > .banner {
+    max-width: 680px;
+    margin: var(--space-4) auto 0;
+    width: calc(100% - 2 * var(--space-8));
+  }
+}
+
+.week-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--space-2);
+  align-items: end;
+}
+.week-bars li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.bar-track {
+  width: 100%;
+  max-width: 28px;
+  height: 80px;
+  display: flex;
+  align-items: flex-end;
+  background: var(--surface-2);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+.bar-fill {
+  width: 100%;
+  background: var(--accent);
+  min-height: 0;
+}

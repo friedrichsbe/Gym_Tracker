@@ -8,15 +8,19 @@ import { IconChart } from '../ui/icons'
 import {
   exerciseLocations,
   exerciseStats,
+  inRange,
   loadStatsData,
+  RANGES,
+  type RangeId,
   trainedExerciseIds,
   type ExercisePoint,
   type LocationFilter,
 } from './analytics'
 
-type Metric = 'topWeight' | 'volume' | 'bestReps'
+type Metric = 'topWeight' | 'e1rm' | 'volume' | 'bestReps'
 const METRICS: { id: Metric; label: string }[] = [
   { id: 'topWeight', label: 'Top weight' },
+  { id: 'e1rm', label: 'Est. 1RM' },
   { id: 'volume', label: 'Volume' },
   { id: 'bestReps', label: 'Best reps' },
 ]
@@ -29,6 +33,7 @@ export function ExerciseProgress() {
   const [location, setLocation] = useState<LocationFilter | null>(null) // null = pick default
   const [chosenMetric, setMetric] = useState<Metric>('topWeight')
   const [hideSupersets, setHideSupersets] = useState(false)
+  const [range, setRange] = useState<RangeId>('all')
 
   const trained = useMemo(() => (data ? trainedExerciseIds(data) : []), [data])
   const names = useMemo(() => new Map((exercises ?? []).map((e) => [e.id, e.name])), [exercises])
@@ -57,9 +62,14 @@ export function ExerciseProgress() {
     [data, activeExercise, effectiveLocation, settings.includeWarmupsInStats, settings.units, hideSupersets],
   )
 
+  // The chart and the table follow the time range; records always look at everything.
+  const shown = useMemo(() => (stats ? inRange(stats.points, range) : []), [stats, range])
+
   // Without any external load (bodyweight work) "top weight" has no values: show reps instead.
   const metric: Metric =
-    chosenMetric === 'topWeight' && stats && stats.points.length > 0 && stats.points.every((p) => p.topWeight == null)
+    (chosenMetric === 'topWeight' || chosenMetric === 'e1rm') &&
+    shown.length > 0 &&
+    shown.every((p) => (chosenMetric === 'e1rm' ? p.e1rm : p.topWeight) == null)
       ? 'bestReps'
       : chosenMetric
 
@@ -78,13 +88,15 @@ export function ExerciseProgress() {
 
   const unit = settings.units
   const value = (p: ExercisePoint): number | null =>
-    metric === 'topWeight' ? p.topWeight : metric === 'volume' ? p.volume : p.bestReps
+    metric === 'topWeight' ? p.topWeight : metric === 'e1rm' ? p.e1rm : metric === 'volume' ? p.volume : p.bestReps
   const metricLabel =
     metric === 'topWeight'
       ? `Top weight (${unit})`
-      : metric === 'volume'
-        ? `Volume (${unit} × reps)`
-        : 'Best reps in a set'
+      : metric === 'e1rm'
+        ? `Estimated 1RM (${unit})`
+        : metric === 'volume'
+          ? `Volume (${unit} × reps)`
+          : 'Best reps in a set'
 
   return (
     <section className="stack" aria-label="Exercise progress">
@@ -127,6 +139,13 @@ export function ExerciseProgress() {
           <input type="checkbox" checked={hideSupersets} onChange={(e) => setHideSupersets(e.target.checked)} />
           <span>Hide sets done in supersets</span>
         </label>
+        <div className="segmented full" role="group" aria-label="Time range">
+          {RANGES.map((r) => (
+            <button key={r.id} type="button" aria-pressed={range === r.id} onClick={() => setRange(r.id)}>
+              {r.label}
+            </button>
+          ))}
+        </div>
         <div className="segmented full" role="group" aria-label="Metric">
           {METRICS.map((m) => (
             <button key={m.id} type="button" aria-pressed={metric === m.id} onClick={() => setMetric(m.id)}>
@@ -136,26 +155,28 @@ export function ExerciseProgress() {
         </div>
       </div>
 
-      {stats && stats.points.length > 0 && (
+      {stats && stats.points.length > 0 && shown.length === 0 && (
+        <p className="banner">No sessions in this time range. Pick a longer one to see older workouts.</p>
+      )}
+
+      {stats && shown.length > 0 && (
         <div className="card stack">
           <h2>{metricLabel}</h2>
-          <LineChart
-            points={stats.points}
-            value={value}
-            label={metricLabel}
-            showLocations={effectiveLocation === 'all'}
-          />
+          <LineChart points={shown} value={value} label={metricLabel} showLocations={effectiveLocation === 'all'} />
           <p className="hint">
-            {stats.points.length} {stats.points.length === 1 ? 'session' : 'sessions'}, {stats.totalSets} sets. Warm-ups{' '}
-            {settings.includeWarmupsInStats ? 'included' : 'excluded'}. Every dot is one session; nothing is smoothed.
+            {shown.length} {shown.length === 1 ? 'session' : 'sessions'}, {shown.reduce((n, p) => n + p.sets, 0)} sets.
+            Warm-ups {settings.includeWarmupsInStats ? 'included' : 'excluded'}. Every dot is one session; nothing is
+            smoothed.
             {metric === 'volume' && ' Volume is load × reps over all counted sets.'}
+            {metric === 'e1rm' &&
+              ' Estimate from the best set (Epley: weight × (1 + reps ⁄ 30)), only for sets of 1–12 reps — a guide, not a tested max.'}
           </p>
         </div>
       )}
 
       {stats && (stats.records.heaviest || stats.records.mostReps) && (
         <div className="card stack">
-          <h2>Records{effectiveLocation === 'all' ? ' (all locations)' : ''}</h2>
+          <h2>Records{effectiveLocation === 'all' ? ' (all locations)' : ''} · all time</h2>
           <div className="summary-grid">
             {stats.records.heaviest && (
               <Record
@@ -185,7 +206,7 @@ export function ExerciseProgress() {
         </div>
       )}
 
-      {stats && stats.points.length > 0 && (
+      {stats && shown.length > 0 && (
         <div className="card stack">
           <h2>Sessions</h2>
           <div className="table-wrap">
@@ -200,7 +221,7 @@ export function ExerciseProgress() {
                 </tr>
               </thead>
               <tbody>
-                {[...stats.points].reverse().map((p) => (
+                {[...shown].reverse().map((p) => (
                   <tr key={p.sessionId}>
                     <td>
                       <Link to={`/history/${p.sessionId}`}>{formatDate(p.startedAt)}</Link>

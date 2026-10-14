@@ -15,6 +15,22 @@ export function HistoryPage() {
   const [day, setDay] = useState<string>('all')
   const [location, setLocation] = useState<string>('all')
   const [logging, setLogging] = useState(false)
+  const [exerciseId, setExerciseId] = useState<string>('all')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  // Which exercises were done in which workout, for the exercise filter.
+  const done = useLiveQuery(async () => {
+    const completed = new Set((await db.sessions.where('status').equals('completed').primaryKeys()) as string[])
+    const bySession = new Map<string, Set<string>>()
+    const names = new Map<string, string>()
+    for (const we of await db.workoutExercises.toArray()) {
+      if (!completed.has(we.sessionId)) continue
+      if (!bySession.has(we.sessionId)) bySession.set(we.sessionId, new Set())
+      bySession.get(we.sessionId)!.add(we.performedExerciseId)
+      names.set(we.performedExerciseId, we.performedNameSnapshot)
+    }
+    return { bySession, names: [...names.entries()].sort((a, b) => a[1].localeCompare(b[1])) }
+  }, [])
   const sessions = useLiveQuery(
     async () =>
       (await db.sessions.where('status').equals('completed').toArray()).sort(
@@ -28,9 +44,12 @@ export function HistoryPage() {
       (sessions ?? []).filter(
         (s) =>
           (day === 'all' || (day === 'free' ? s.dayTypeId === null : s.dayTypeId === day)) &&
-          (location === 'all' || (location === 'none' ? s.locationId === null : s.locationId === location)),
+          (location === 'all' || (location === 'none' ? s.locationId === null : s.locationId === location)) &&
+          (!from || s.startedAt.slice(0, 10) >= from) &&
+          (!to || s.startedAt.slice(0, 10) <= to) &&
+          (exerciseId === 'all' || (done?.bySession.get(s.id)?.has(exerciseId) ?? false)),
       ),
-    [sessions, day, location],
+    [sessions, day, location, from, to, exerciseId, done],
   )
   const months = useMemo(() => {
     const out: { label: string; items: typeof filtered }[] = []
@@ -80,6 +99,48 @@ export function HistoryPage() {
           </select>
         </div>
       </div>
+
+      <div className="filter-bar">
+        <div className="field span-2">
+          <label htmlFor="h-ex">Exercise</label>
+          <select id="h-ex" value={exerciseId} onChange={(e) => setExerciseId(e.target.value)}>
+            <option value="all">All exercises</option>
+            {(done?.names ?? []).map(([id, name]) => (
+              <option key={id} value={id}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="h-from">From</label>
+          <input id="h-from" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
+        </div>
+        <div className="field">
+          <label htmlFor="h-to">To</label>
+          <input id="h-to" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+        </div>
+      </div>
+      {(day !== 'all' || location !== 'all' || exerciseId !== 'all' || from || to) && sessions && (
+        <div className="row-between">
+          <span className="small muted num">
+            {filtered.length} of {sessions.length} workouts
+          </span>
+          <button
+            type="button"
+            className="btn ghost small"
+            onClick={() => {
+              setDay('all')
+              setLocation('all')
+              setExerciseId('all')
+              setFrom('')
+              setTo('')
+            }}
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
 
       {sessions === undefined && <div className="skeleton block" />}
       {sessions && sessions.length === 0 && (

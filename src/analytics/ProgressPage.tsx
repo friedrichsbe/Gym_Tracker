@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { ActivityHeatmap } from './ActivityHeatmap'
 import { ExerciseProgress } from './ExerciseProgress'
+import { Insights } from './Insights'
 
 export function ProgressPage() {
-  const [tab, setTab] = useState<'activity' | 'exercises'>('activity')
+  const [tab, setTab] = useState<'activity' | 'exercises' | 'insights'>('activity')
   return (
     <main className="content">
       <div className="page-head">
@@ -14,6 +15,7 @@ export function ProgressPage() {
           [
             ['activity', 'Activity'],
             ['exercises', 'Exercises'],
+            ['insights', 'Insights'],
           ] as const
         ).map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>
@@ -21,7 +23,7 @@ export function ProgressPage() {
           </button>
         ))}
       </div>
-      {tab === 'activity' ? <ActivityHeatmap /> : <ExerciseProgress />}
+      {tab === 'activity' ? <ActivityHeatmap /> : tab === 'exercises' ? <ExerciseProgress /> : <Insights />}
     </main>
   )
 }

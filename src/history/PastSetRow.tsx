@@ -3,6 +3,8 @@ import type { LoadType, SetRecord, SetType } from '../domain/types'
 import { NumericField } from '../ui/NumericField'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
+import { effortLabel } from '../workout/effort'
+import { SetDetailsFields } from '../workout/SetDetailsFields'
 import { deleteSet, restoreSet, updateSet } from '../workout/workoutService'
 
 const TYPE_LABEL: Record<SetType, string> = {
@@ -54,7 +56,9 @@ export function PastSetRow({ set }: { set: SetRecord }) {
           value={set.reps}
           onCommit={(v) => void guard(() => updateSet(set.id, { reps: v }))}
         />
-        <span className="set-type-label">{set.setType === 'working' ? '' : TYPE_LABEL[set.setType]}</span>
+        <span className="set-type-label">
+          {[set.setType === 'working' ? '' : TYPE_LABEL[set.setType], effortLabel(set)].filter(Boolean).join(' · ')}
+        </span>
       </div>
 
       <Sheet open={menu} title={label} onClose={() => setMenu(false)}>
@@ -86,6 +90,7 @@ export function PastSetRow({ set }: { set: SetRecord }) {
             </button>
           ))}
         </div>
+        <SetDetailsFields set={set} />
         <button
           type="button"
           className="btn danger block"

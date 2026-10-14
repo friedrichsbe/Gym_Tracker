@@ -5,7 +5,8 @@ import { useExercises, useRecentExerciseIds } from '../data/hooks'
 import type { DayType, EquipmentType, Exercise } from '../domain/types'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
-import { createCustomExercise, normalize, searchExercises } from './exerciseService'
+import { createCustomExercise, normalize, searchExercises, setFavorite } from './exerciseService'
+import { IconStar } from '../ui/icons'
 
 const REASONS = ['Occupied', 'Not available', 'Preferred alternative']
 const EQUIPMENT: EquipmentType[] = ['machine', 'dumbbell', 'barbell', 'cable', 'bodyweight', 'other']
@@ -49,6 +50,9 @@ export function ExercisePicker({
   const [selected, setSelected] = useState<string[]>([])
   const [belongsTo, setBelongsTo] = useState<string[] | null>(null)
   const [newMuscles, setNewMuscles] = useState<string[]>([])
+  const [filterEquipment, setFilterEquipment] = useState('')
+  const [filterMuscle, setFilterMuscle] = useState('')
+  const [onlyFavorites, setOnlyFavorites] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
 
   // Sheet opens the dialog in its own effect (child effects run first), so focusing here sticks.
@@ -60,7 +64,13 @@ export function ExercisePicker({
   const fits = (e: Exercise) => fitsDay(e, day, extraFitIds)
 
   const { suggested, others } = useMemo(() => {
-    const active = all.filter((e) => !e.archivedAt)
+    const active = all.filter(
+      (e) =>
+        !e.archivedAt &&
+        (!filterEquipment || e.equipmentType === filterEquipment) &&
+        (!filterMuscle || e.muscleTags.includes(filterMuscle)) &&
+        (!onlyFavorites || e.favorite),
+    )
     if (query.trim()) {
       const found = searchExercises(active, query).slice(0, 60)
       return {
@@ -73,14 +83,18 @@ export function ExercisePicker({
     }
     const rank = (e: Exercise) => {
       const i = recentIds.indexOf(e.id)
-      return i === -1 ? Infinity : i
+      return (e.favorite ? -1 : 0) * 1000 + (i === -1 ? 500 : i) // favourites first, then recent
     }
     const fitting = active
       .filter((e) => fitsDay(e, day, extraFitIds))
       .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
     const rest = active.filter((e) => !fitsDay(e, day, extraFitIds)).sort((a, b) => a.name.localeCompare(b.name))
     return { suggested: fitting, others: rest }
-  }, [all, query, recentIds, day, extraFitIds])
+  }, [all, query, recentIds, day, extraFitIds, filterEquipment, filterMuscle, onlyFavorites])
+  const muscleOptions = useMemo(
+    () => [...new Set(all.filter((e) => !e.archivedAt).flatMap((e) => e.muscleTags))].sort(),
+    [all],
+  )
 
   const exactMatch = all.some(
     (e) =>
@@ -120,7 +134,7 @@ export function ExercisePicker({
       </>
     )
     return (
-      <li key={e.id}>
+      <li key={e.id} className="pick-item">
         {mode === 'multi' ? (
           <label className="pick-row">
             <input type="checkbox" checked={selected.includes(e.id)} onChange={() => choose(e)} />
@@ -131,6 +145,15 @@ export function ExercisePicker({
             {content}
           </button>
         )}
+        <button
+          type="button"
+          className="btn ghost icon star-btn"
+          aria-pressed={!!e.favorite}
+          aria-label={e.favorite ? `Remove ${e.name} from favorites` : `Add ${e.name} to favorites`}
+          onClick={() => void guard(() => setFavorite(e.id, !e.favorite))}
+        >
+          <IconStar filled={!!e.favorite} />
+        </button>
       </li>
     )
   }
@@ -179,6 +202,32 @@ export function ExercisePicker({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+      </div>
+
+      <div className="filter-bar">
+        <div className="field">
+          <label htmlFor="pick-eq">Equipment</label>
+          <select id="pick-eq" value={filterEquipment} onChange={(e) => setFilterEquipment(e.target.value)}>
+            <option value="">Any</option>
+            {EQUIPMENT.map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="pick-mu">Muscle</label>
+          <select id="pick-mu" value={filterMuscle} onChange={(e) => setFilterMuscle(e.target.value)}>
+            <option value="">Any</option>
+            {muscleOptions.map((x) => (
+              <option key={x}>{x}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="chip-row">
+        <button type="button" className="chip" aria-pressed={onlyFavorites} onClick={() => setOnlyFavorites((v) => !v)}>
+          ★ Favorites only
+        </button>
       </div>
 
       {!query.trim() && specificDay && <p className="section-label">Suggested for {specificDay.name}</p>}

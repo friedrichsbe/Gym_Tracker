@@ -139,6 +139,8 @@ export interface ExercisePoint {
   topWeight: number | null
   repsAtTop: number | null
   bestReps: number
+  /** Best estimated one-rep max of the session (Epley), null when no loaded set of 1–12 reps. */
+  e1rm: number | null
   volume: number
   sets: number
   locationNames: string[]
@@ -187,11 +189,14 @@ export function exerciseStats(
     let repsAtTop: number | null = null
     let bestReps = 0
     let volume = 0
+    let e1rm: number | null = null
     for (const s of group) {
       const reps = s.reps ?? 0
       bestReps = Math.max(bestReps, reps)
       const external = s.loadType === 'weight' && s.weightValue != null
       const w = external ? convert(s.weightValue!, s.weightUnit, opts.unit) : null
+      const est = estimateOneRepMax(w, reps)
+      if (est != null && (e1rm == null || est > e1rm)) e1rm = est
       if (w != null) {
         volume += w * reps
         if (topWeight == null || w > topWeight || (w === topWeight && reps > (repsAtTop ?? 0))) {
@@ -225,6 +230,7 @@ export function exerciseStats(
       topWeight,
       repsAtTop,
       bestReps,
+      e1rm,
       volume,
       sets: group.length,
       locationNames: [...new Set(group.map((s) => s.locationNameSnapshot ?? 'Unknown'))],
@@ -274,4 +280,80 @@ export function trainedExerciseIds(data: StatsData): string[] {
     last.set(inst.performedExerciseId, Math.max(last.get(inst.performedExerciseId) ?? 0, t))
   }
   return [...last.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id)
+}
+
+// ---------------------------------------------------------------------------
+// Time range (progress charts)
+// ---------------------------------------------------------------------------
+
+export type RangeId = '1m' | '3m' | '6m' | '1y' | 'all'
+export const RANGES: { id: RangeId; label: string }[] = [
+  { id: '1m', label: '1 M' },
+  { id: '3m', label: '3 M' },
+  { id: '6m', label: '6 M' },
+  { id: '1y', label: '1 Y' },
+  { id: 'all', label: 'All' },
+]
+
+/** First calendar day included in the range (null = no lower bound). */
+export function rangeStart(range: RangeId, today: DateKey = todayKey()): DateKey | null {
+  const months = { '1m': 1, '3m': 3, '6m': 6, '1y': 12, all: 0 }[range]
+  return months === 0 ? null : addMonths(today, -months)
+}
+
+export const inRange = <T extends { date: DateKey }>(points: T[], range: RangeId, today?: DateKey): T[] => {
+  const from = rangeStart(range, today)
+  return from === null ? points : points.filter((p) => p.date >= from)
+}
+
+// ---------------------------------------------------------------------------
+// Estimated 1RM, training frequency and weekly sets per muscle
+// ---------------------------------------------------------------------------
+
+/**
+ * Epley estimate of the one-rep max. Only meaningful for loaded sets of up to 12 reps; always shown as an estimate.
+ * Returns null where the formula does not apply.
+ */
+export function estimateOneRepMax(weight: number | null, reps: number | null): number | null {
+  if (weight == null || weight <= 0 || reps == null || reps < 1 || reps > 12) return null
+  return reps === 1 ? weight : weight * (1 + reps / 30)
+}
+
+export interface WeekRow {
+  /** Monday of the week. */
+  week: DateKey
+  workouts: number
+  /** Counted sets per muscle tag of the exercise performed. */
+  muscleSets: Map<string, number>
+}
+
+/** The last `weeks` weeks (current one last), including weeks without training. */
+export function weeklyOverview(
+  data: StatsData,
+  muscleOf: (exerciseId: string) => string[],
+  opts: { weeks: number; includeWarmups: boolean; today?: DateKey },
+): WeekRow[] {
+  const thisWeek = startOfWeek(opts.today ?? todayKey())
+  const rows = new Map<DateKey, WeekRow>()
+  for (let i = opts.weeks - 1; i >= 0; i--) {
+    const week = addDays(thisWeek, -7 * i)
+    rows.set(week, { week, workouts: 0, muscleSets: new Map() })
+  }
+  const sessionDate = new Map(data.sessions.map((s) => [s.id, dateKeyOf(s.startedAt)]))
+  const instance = new Map(data.instances.map((i) => [i.id, i]))
+  const counted = new Set<string>()
+  for (const s of data.sets) {
+    if (!opts.includeWarmups && s.setType === 'warmup') continue
+    const date = sessionDate.get(s.sessionId)
+    const row = date ? rows.get(startOfWeek(date)) : undefined
+    if (!row) continue
+    counted.add(s.sessionId)
+    const we = instance.get(s.workoutExerciseId)
+    for (const m of we ? muscleOf(we.performedExerciseId) : []) row.muscleSets.set(m, (row.muscleSets.get(m) ?? 0) + 1)
+  }
+  for (const id of counted) {
+    const row = rows.get(startOfWeek(sessionDate.get(id)!))
+    if (row) row.workouts += 1
+  }
+  return [...rows.values()]
 }

@@ -13,6 +13,7 @@ import { IconChart, IconClock, IconDumbbell, IconList, IconSettings } from '../u
 import { ToastProvider } from '../ui/Toast'
 import { WorkoutPage } from '../workout/WorkoutPage'
 import { Onboarding } from './Onboarding'
+import { StorageGuard } from './StorageGuard'
 
 // Charts and import/export (with its validation library) are only needed on demand.
 const ProgressPage = lazy(() => import('../analytics/ProgressPage').then((m) => ({ default: m.ProgressPage })))
@@ -67,6 +68,7 @@ function Shell() {
 
   return (
     <div className="shell">
+      <StorageGuard />
       <Suspense fallback={null}>
         <Routes>
           <Route path="/" element={<WorkoutPage />} />

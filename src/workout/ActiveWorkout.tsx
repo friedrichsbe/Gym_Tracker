@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { RecordsList } from '../analytics/RecordsList'
 import { addExerciseToDayType, fitsDay } from '../daytypes/dayTypeService'
 import { db } from '../data/db'
 import { ExercisePicker } from '../exercises/ExercisePicker'
@@ -221,6 +222,7 @@ function FinishSheet(props: {
           </div>
         </div>
       )}
+      {!empty && <RecordsList sessionId={sessionId} active={open} />}
       {summary && !empty && summary.exercisesSkipped > 0 && (
         <p className="hint">Exercises without completed sets are saved as skipped; unfilled sets are dropped.</p>
       )}

@@ -71,10 +71,34 @@ export async function buildExport(): Promise<ExportFile> {
   }
 }
 
+/** The same file format, reduced to one workout plus the exercises, locations and day it refers to. */
+export function onlySession(d: ExportFile, sessionId: string): ExportFile {
+  const sessions = d.sessions.filter((s) => s.id === sessionId)
+  const instances = sessions.flatMap((s) => s.exerciseInstances)
+  const exerciseIds = new Set(instances.flatMap((i) => [i.performedExerciseId, i.plannedExerciseId ?? '']))
+  const locationIds = new Set([
+    ...sessions.map((s) => s.locationId ?? ''),
+    ...instances.flatMap((i) => i.sets.map((x) => x.locationId ?? '')),
+  ])
+  const dayIds = new Set(sessions.map((s) => s.dayTypeId ?? ''))
+  return {
+    ...d,
+    exercises: d.exercises.filter((e) => exerciseIds.has(e.id)),
+    locations: d.locations.filter((l) => locationIds.has(l.id)),
+    dayTypes: d.dayTypes.filter((t) => dayIds.has(t.id)),
+    routines: [],
+    sessions,
+  }
+}
+
 const stamp = () => nowIso().slice(0, 10)
 
-export async function exportJsonFile(prefix = 'gym-tracker-backup'): Promise<{ blob: Blob; filename: string }> {
-  const data = await buildExport()
+export async function exportJsonFile(
+  prefix = 'gym-tracker-backup',
+  opts: { sessionId?: string } = {},
+): Promise<{ blob: Blob; filename: string }> {
+  const full = await buildExport()
+  const data = opts.sessionId ? onlySession(full, opts.sessionId) : full
   return {
     blob: new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
     filename: `${prefix}-${stamp()}.json`,
@@ -115,8 +139,9 @@ routines.csv           id, name, day_type_id, notes, archived_at
 routine_exercises.csv  id, routine_id, exercise_id, position, suggested_sets, target_rep_min, target_rep_max, superset_group, notes
 `
 
-export async function exportCsvZip(): Promise<{ blob: Blob; filename: string }> {
-  const d = await buildExport()
+export async function exportCsvZip(opts: { sessionId?: string } = {}): Promise<{ blob: Blob; filename: string }> {
+  const full = await buildExport()
+  const d = opts.sessionId ? onlySession(full, opts.sessionId) : full
   const exName = new Map(d.exercises.map((e) => [e.id, e.name]))
   const rows = (header: string[], body: unknown[][]) => [csvLine(header), ...body.map(csvLine)].join('\r\n') + '\r\n'
   const enc = new TextEncoder()
@@ -309,13 +334,19 @@ export async function exportCsvZip(): Promise<{ blob: Blob; filename: string }> 
     ),
   }
   const zip = buildZip(Object.entries(files).map(([name, content]) => ({ name, data: enc.encode(content) })))
-  return { blob: new Blob([zip as BlobPart], { type: 'application/zip' }), filename: `gym-tracker-csv-${stamp()}.zip` }
+  return {
+    blob: new Blob([zip as BlobPart], { type: 'application/zip' }),
+    filename: `${opts.sessionId ? 'gym-tracker-workout' : 'gym-tracker-csv'}-${stamp()}.zip`,
+  }
 }
 
 /** Hands the file to the browser. Records the export date only after the file was actually produced. */
 export async function deliver(
   file: { blob: Blob; filename: string },
-  opts: { share?: boolean } = {},
+  opts: {
+    share?: boolean
+    /** false for partial exports: they must not silence the backup reminder. */ isBackup?: boolean
+  } = {},
 ): Promise<'shared' | 'downloaded'> {
   const f = new File([file.blob], file.filename, { type: file.blob.type })
   let result: 'shared' | 'downloaded' = 'downloaded'
@@ -332,6 +363,6 @@ export async function deliver(
     a.remove()
     setTimeout(() => URL.revokeObjectURL(url), 10_000)
   }
-  await updateSettings({ lastExportAt: nowIso() })
+  if (opts.isBackup !== false) await updateSettings({ lastExportAt: nowIso() })
   return result
 }

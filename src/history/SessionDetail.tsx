@@ -1,8 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { useDayTypes } from '../data/hooks'
-import { createRoutineFromSession } from '../routines/routineService'
+import { RecordsList } from '../analytics/RecordsList'
+import { useDayTypes, useRoutines } from '../data/hooks'
+import { deliver, exportCsvZip, exportJsonFile } from '../portability/exportData'
+import { createRoutineFromSession, saveRoutine, updateRoutineFromSession } from '../routines/routineService'
 import { formatDate, formatDurationShort, formatVolume } from '../ui/format'
 import { SupersetFrame } from '../workout/SupersetFrame'
 import { toBlocks } from '../workout/supersets'
@@ -38,7 +40,10 @@ export function SessionDetailPage() {
   const { active: days, archived: archivedDays } = useDayTypes()
   const view = useLiveQuery(() => loadSessionView(id), [id])
   const summary = useLiveQuery(() => summarizeSession(id), [id])
+  const { active: routines } = useRoutines()
   const [saving, setSaving] = useState(false)
+  const [updatingPreset, setUpdatingPreset] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [editingDetails, setEditingDetails] = useState(false)
   const [pickingExercise, setPickingExercise] = useState(false)
@@ -123,6 +128,8 @@ export function SessionDetailPage() {
           </div>
         )}
       </div>
+
+      <RecordsList sessionId={session.id} />
 
       <button type="button" className="btn block" onClick={() => setEditingDetails(true)}>
         Edit date, gym &amp; day
@@ -216,6 +223,14 @@ export function SessionDetailPage() {
         <button
           type="button"
           className="btn block"
+          disabled={performed.length === 0 || routines.length === 0}
+          onClick={() => setUpdatingPreset(true)}
+        >
+          Update an existing preset…
+        </button>
+        <button
+          type="button"
+          className="btn block"
           disabled={performed.length === 0}
           onClick={() =>
             void guard(async () => {
@@ -230,6 +245,9 @@ export function SessionDetailPage() {
           }
         >
           Repeat this workout
+        </button>
+        <button type="button" className="btn block" onClick={() => setExporting(true)}>
+          Export this workout…
         </button>
         <button type="button" className="btn ghost danger-text block" onClick={() => setDeleting(true)}>
           Delete workout…
@@ -250,6 +268,82 @@ export function SessionDetailPage() {
           })
         }
       />
+
+      <Sheet open={updatingPreset} title="Update a preset" onClose={() => setUpdatingPreset(false)}>
+        <p className="secondary small">
+          The preset keeps its name and day, but its exercises become what you did here: order, set counts, rep range
+          and supersets. You can undo right afterwards.
+        </p>
+        <ul className="list card flush">
+          {[...routines]
+            .sort((a, b) => Number(b.id === session.routineId) - Number(a.id === session.routineId))
+            .map((r) => (
+              <li key={r.id}>
+                <button
+                  type="button"
+                  className="session-item"
+                  onClick={() =>
+                    void guard(async () => {
+                      const previous = await updateRoutineFromSession(session.id, r.id)
+                      setUpdatingPreset(false)
+                      show(`Preset “${r.name}” updated`, {
+                        actionLabel: 'Undo',
+                        onAction: () =>
+                          void guard(() =>
+                            saveRoutine(r.id, {
+                              name: r.name,
+                              dayTypeId: r.dayTypeId,
+                              notes: r.notes,
+                              exercises: previous,
+                            }),
+                          ),
+                      })
+                    })
+                  }
+                >
+                  <div>
+                    <div className="session-title">{r.name}</div>
+                    {r.id === session.routineId && <div className="small muted">Started from this preset</div>}
+                  </div>
+                </button>
+              </li>
+            ))}
+        </ul>
+      </Sheet>
+
+      <Sheet open={exporting} title="Export this workout" onClose={() => setExporting(false)}>
+        <p className="secondary small">
+          Only this workout, with the exercises and gym it refers to. This is not a backup — it does not reset the
+          backup reminder. The JSON file can be imported again (merge).
+        </p>
+        <button
+          type="button"
+          className="btn primary block"
+          onClick={() =>
+            void guard(async () => {
+              await deliver(await exportJsonFile('gym-tracker-workout', { sessionId: session.id }), {
+                share: true,
+                isBackup: false,
+              })
+              setExporting(false)
+            })
+          }
+        >
+          JSON file
+        </button>
+        <button
+          type="button"
+          className="btn block"
+          onClick={() =>
+            void guard(async () => {
+              await deliver(await exportCsvZip({ sessionId: session.id }), { share: true, isBackup: false })
+              setExporting(false)
+            })
+          }
+        >
+          CSV (ZIP)
+        </button>
+      </Sheet>
 
       <Sheet open={editingDetails} title="Edit workout details" onClose={() => setEditingDetails(false)}>
         <p className="secondary small">

@@ -14,6 +14,7 @@ import {
   unlinkSuperset,
   moveExercise,
   removeExercise,
+  restoreExercise,
   skipExercise,
   substituteExercise,
   type WorkoutExerciseView,
@@ -45,7 +46,7 @@ export function ExerciseCard({
   extraFitIds,
 }: Props) {
   const { we, sets } = view
-  const { guard } = useToast()
+  const { guard, show } = useToast()
   const [menu, setMenu] = useState(false)
   const [replacing, setReplacing] = useState(false)
 
@@ -191,7 +192,14 @@ export function ExerciseCard({
             className="btn danger block"
             onClick={() => {
               setMenu(false)
-              void guard(() => removeExercise(we.id))
+              void guard(async () => {
+                const removed = await removeExercise(we.id)
+                if (removed)
+                  show(`${we.performedNameSnapshot} removed`, {
+                    actionLabel: 'Undo',
+                    onAction: () => void guard(() => restoreExercise(removed)),
+                  })
+              })
             }}
           >
             Remove from workout

@@ -49,6 +49,8 @@ export interface Exercise extends Timestamps {
   isCustom: boolean
   /** Rest after a set of this exercise in seconds; null/undefined = use the global default. */
   defaultRestSeconds?: number | null
+  /** Starred by the user: listed first in the picker. */
+  favorite?: boolean
   archivedAt: IsoTimestamp | null
 }
 

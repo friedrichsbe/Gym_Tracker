@@ -32,6 +32,7 @@ export const exerciseSchema = z.object({
   muscleTags: z.array(z.string().max(100)).max(50).default([]),
   isCustom: z.boolean().default(false),
   defaultRestSeconds: z.number().int().min(5).max(1800).nullable().optional(),
+  favorite: z.boolean().optional(),
   archivedAt: iso.nullable().default(null),
   ...stamps,
 })

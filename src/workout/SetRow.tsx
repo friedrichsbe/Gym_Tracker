@@ -7,6 +7,7 @@ import { useToast } from '../ui/toastContext'
 import { useSettings } from '../data/hooks'
 import { getRestSuggestion } from './restService'
 import { startRest } from './restTimer'
+import { SetDetailsFields } from './SetDetailsFields'
 import { completeSet, deleteSet, restoreSet, uncompleteSet, updateSet } from './workoutService'
 
 const TYPE_LABEL: Record<SetType, string> = {
@@ -35,7 +36,7 @@ export function SetRow({ set, label }: { set: SetRecord; label: string }) {
       <div className={`set-row ${set.isCompleted ? 'done' : ''}`}>
         <button
           type="button"
-          className={`set-badge num ${set.setType === 'warmup' ? 'warmup' : ''}`}
+          className={`set-badge num ${set.setType === 'warmup' ? 'warmup' : ''} ${set.rpe != null || set.rir != null || set.notes ? 'has-detail' : ''}`}
           aria-label={`${label}, ${TYPE_LABEL[set.setType]}. Open set options`}
           onClick={() => setMenu(true)}
         >
@@ -101,6 +102,7 @@ export function SetRow({ set, label }: { set: SetRecord; label: string }) {
             </button>
           ))}
         </div>
+        <SetDetailsFields set={set} />
         <button
           type="button"
           className="btn danger block"
