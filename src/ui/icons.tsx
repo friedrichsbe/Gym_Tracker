@@ -116,3 +116,45 @@ export const IconTranslate = () => (
     <path d="m12.5 20 4-9 4 9M14 17h5" />
   </svg>
 )
+export const IconPencil = () => (
+  <svg {...base} width={16} height={16}>
+    <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z" />
+    <path d="m13.5 6.5 4 4" />
+  </svg>
+)
+export const IconHeartPulse = () => (
+  <svg {...base} width={18} height={18}>
+    <path d="M20.5 9.5c0 5-8.5 10.5-8.5 10.5S3.5 14.5 3.5 9.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8.5 2.5Z" />
+    <path d="M3.5 12h4l1.5-2.5 2.5 5 1.5-2.5h7.5" />
+  </svg>
+)
+export const IconRepeat = () => (
+  <svg {...base} width={20} height={20}>
+    <path d="M17 3l3 3-3 3" />
+    <path d="M4 12V10a4 4 0 0 1 4-4h12M7 21l-3-3 3-3" />
+    <path d="M20 12v2a4 4 0 0 1-4 4H4" />
+  </svg>
+)
+export const IconRefresh = () => (
+  <svg {...base} width={20} height={20}>
+    <path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4" />
+    <path d="M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4" />
+  </svg>
+)
+export const IconShare = () => (
+  <svg {...base} width={20} height={20}>
+    <path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" />
+    <path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" />
+  </svg>
+)
+export const IconTrash = () => (
+  <svg {...base} width={16} height={16}>
+    <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+  </svg>
+)
+export const IconNote = () => (
+  <svg {...base} width={18} height={18}>
+    <path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+    <path d="M9 12h6M9 16h4" />
+  </svg>
+)

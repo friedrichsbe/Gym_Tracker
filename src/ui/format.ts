@@ -35,6 +35,11 @@ export function formatDate(iso: IsoTimestamp): string {
   return dateFmt.format(new Date(iso))
 }
 
+const timeFmt = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' })
+export function formatTime(iso: IsoTimestamp): string {
+  return timeFmt.format(new Date(iso))
+}
+
 export function formatSetShort(s: Pick<SetRecord, 'weightValue' | 'reps' | 'weightUnit' | 'loadType'>): string {
   const w =
     s.weightValue == null

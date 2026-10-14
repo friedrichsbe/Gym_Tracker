@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { db } from '../data/db'
 import { useDayTypes, useLocations } from '../data/hooks'
 import { instant } from '../domain/time'
@@ -19,6 +19,15 @@ export function HistoryPage() {
   const [exerciseId, setExerciseId] = useState<string>('all')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const route = useLocation()
+  const navigate = useNavigate()
+  // Set by "Save & finish": the workout just logged gently pulses once so it's easy to spot.
+  const highlight = (route.state as { highlight?: string } | null)?.highlight ?? null
+  useEffect(() => {
+    if (!highlight) return
+    const t = window.setTimeout(() => navigate(route.pathname, { replace: true, state: null }), 5000)
+    return () => window.clearTimeout(t)
+  }, [highlight, navigate, route.pathname])
   // Which exercises were done in which workout, for the exercise filter.
   const done = useLiveQuery(async () => {
     const completed = new Set((await db.sessions.where('status').equals('completed').primaryKeys()) as string[])
@@ -170,6 +179,7 @@ export function HistoryPage() {
                 date={formatDate(s.startedAt)}
                 title={[s.dayTypeNameSnapshot, s.routineNameSnapshot].filter(Boolean).join(' · ') || 'Workout'}
                 place={s.locationNameSnapshot}
+                highlight={s.id === highlight}
               />
             ))}
           </ul>
@@ -179,11 +189,20 @@ export function HistoryPage() {
   )
 }
 
-function Row(props: { id: string; date: string; title: string; place: string | null }) {
+function Row(props: { id: string; date: string; title: string; place: string | null; highlight?: boolean }) {
   const summary = useLiveQuery(() => summarizeSession(props.id), [props.id])
+  const ref = useRef<HTMLAnchorElement>(null)
+  useEffect(() => {
+    if (props.highlight) ref.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [props.highlight])
   return (
     <li>
-      <Link to={`/history/${props.id}`} className="session-item">
+      <Link
+        ref={ref}
+        to={`/history/${props.id}`}
+        className={`session-item ${props.highlight ? 'just-saved' : ''}`}
+        aria-description={props.highlight ? 'Just saved' : undefined}
+      >
         <div>
           <div className="session-title">{props.date}</div>
           <div className="small muted">

@@ -7,10 +7,28 @@ import { loadCardio } from '../cardio/cardioService'
 import { useDayTypes, useRoutines } from '../data/hooks'
 import { deliver, exportCsvZip, exportJsonFile } from '../portability/exportData'
 import { createRoutineFromSession, saveRoutine, updateRoutineFromSession } from '../routines/routineService'
-import { formatDate, formatDurationShort, formatVolume } from '../ui/format'
+import { formatDate, formatDurationShort, formatTime, formatVolume } from '../ui/format'
 import { SupersetFrame } from '../workout/SupersetFrame'
 import { toBlocks } from '../workout/supersets'
-import { IconChevronLeft, IconMore, IconPlus } from '../ui/icons'
+import {
+  IconCalendar,
+  IconCheck,
+  IconChevronLeft,
+  IconClock,
+  IconDumbbell,
+  IconHeartPulse,
+  IconMore,
+  IconNote,
+  IconPencil,
+  IconPin,
+  IconPlus,
+  IconRefresh,
+  IconRepeat,
+  IconShare,
+  IconStar,
+  IconTrash,
+  IconX,
+} from '../ui/icons'
 import { ExercisePicker } from '../exercises/ExercisePicker'
 import type { WorkoutExercise } from '../domain/types'
 import { PastSetRow } from './PastSetRow'
@@ -54,8 +72,14 @@ export function SessionDetailPage() {
   const [changingFor, setChangingFor] = useState<WorkoutExercise | null>(null)
   const [removingFor, setRemovingFor] = useState<WorkoutExercise | null>(null)
   const navState = location.state as { justFinished?: boolean; justCreated?: boolean } | null
-  const justFinished = navState?.justFinished === true
-  const justCreated = navState?.justCreated === true
+  const [calloutDismissed, setCalloutDismissed] = useState(false)
+  const justFinished = navState?.justFinished === true && !calloutDismissed
+  const justCreated = navState?.justCreated === true && !calloutDismissed
+  // Dismiss for good: also drop the flag from the history entry, so going back here doesn't bring it back.
+  const dismissCallout = () => {
+    setCalloutDismissed(true)
+    navigate(location.pathname, { replace: true, state: null })
+  }
 
   if (view === undefined) return null
   if (!view) {
@@ -69,11 +93,12 @@ export function SessionDetailPage() {
     )
   }
   const { session, exercises } = view
-  const title = [session.dayTypeNameSnapshot, session.routineNameSnapshot].filter(Boolean).join(' · ') || 'Workout'
   const performed = exercises.filter((e) => e.sets.some((s) => s.isCompleted))
   // Everything that can still be edited: entries with sets, plus completed ones whose sets were all deleted.
   const shown = exercises.filter((e) => e.sets.length > 0 || e.we.status !== 'skipped')
   const sessionDay = [...days, ...archivedDays].find((d) => d.id === session.dayTypeId) ?? null
+  const preCardio = cardio.filter((c) => c.slot === 'start').length
+  const postCardio = cardio.filter((c) => c.slot === 'end').length
 
   return (
     <main className="content">
@@ -83,7 +108,15 @@ export function SessionDetailPage() {
       </Link>
 
       {justCreated && (
-        <div className="card stack callout" role="status">
+        <div className="card stack callout dismissible" role="status">
+          <button
+            type="button"
+            className="btn ghost icon small callout-close"
+            aria-label="Dismiss"
+            onClick={dismissCallout}
+          >
+            <IconX />
+          </button>
           <h2>Workout created</h2>
           <p className="secondary small">
             Add the exercises and sets you did. Set values stay empty until you type them — nothing is guessed.
@@ -92,24 +125,53 @@ export function SessionDetailPage() {
       )}
 
       {justFinished && (
-        <div className="card stack callout" role="status">
+        <div className="card stack callout dismissible" role="status">
+          <button
+            type="button"
+            className="btn ghost icon small callout-close"
+            aria-label="Dismiss"
+            onClick={dismissCallout}
+          >
+            <IconX />
+          </button>
           <h2>Nice work. Save this as a preset?</h2>
           <p className="secondary small">
             Next time you train this day you can start from exactly this workout — and still change anything.
           </p>
-          <button type="button" className="btn primary" onClick={() => setSaving(true)}>
+          <button type="button" className="btn primary self-start" onClick={() => setSaving(true)}>
             Save as preset
           </button>
         </div>
       )}
 
-      <div className="stack">
-        <div className="page-title">
-          <span className="overline">
-            {title} · {session.locationNameSnapshot ?? 'No location'}
-          </span>
-          <h1>{formatDate(session.startedAt)}</h1>
+      {/* 1 · The basics: when, where, which day — with its own edit button. */}
+      <section className="card session-hero" aria-label="Workout details">
+        <div className="hero-head">
+          <div className="page-title">
+            <span className="overline">
+              {session.routineNameSnapshot ? `Preset · ${session.routineNameSnapshot}` : 'Workout'}
+            </span>
+            <h1>{formatDate(session.startedAt)}</h1>
+          </div>
+          <button type="button" className="btn small" onClick={() => setEditingDetails(true)}>
+            <IconPencil />
+            Edit
+          </button>
         </div>
+        <ul className="meta-pills plain-list" aria-label="Details">
+          <li>
+            <IconPin />
+            {session.locationNameSnapshot ?? 'No location'}
+          </li>
+          <li>
+            <IconCalendar />
+            {session.dayTypeNameSnapshot ? `${session.dayTypeNameSnapshot} day` : 'Free workout'}
+          </li>
+          <li className="num">
+            <IconClock />
+            {formatTime(session.startedAt)}
+          </li>
+        </ul>
         {summary && (
           <div className="summary-grid three">
             <div className="metric">
@@ -130,133 +192,225 @@ export function SessionDetailPage() {
             </div>
           </div>
         )}
-      </div>
+      </section>
 
       <RecordsList sessionId={session.id} />
 
-      <button type="button" className="btn block" onClick={() => setEditingDetails(true)}>
-        Edit date, gym &amp; day
-      </button>
-
-      <CardioSection sessionId={session.id} slot="start" entries={cardio} past />
-
-      {toBlocks(shown, (p) => p.we.supersetGroupId).map((block) => {
-        const cards = block.map(({ we, sets }) => (
-          <section
-            key={we.id}
-            className={`card stack exercise ${we.isForeign ? 'foreign' : ''}`}
-            aria-label={we.performedNameSnapshot}
-          >
-            <div className="exercise-head">
-              <div className="stack tight grow">
-                <h3 className="exercise-name">{we.performedNameSnapshot}</h3>
-                <div className="chip-row">
-                  {we.isForeign && <span className="tag foreign">Outside {session.dayTypeNameSnapshot ?? 'plan'}</span>}
-                  {we.plannedExerciseId && we.plannedNameSnapshot !== we.performedNameSnapshot && (
-                    <span className="tag sub">
-                      Replaced {we.plannedNameSnapshot}
-                      {we.substitutionReason ? ` · ${we.substitutionReason}` : ''}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <button
-                type="button"
-                className="btn ghost icon"
-                aria-label={`Options for ${we.performedNameSnapshot}`}
-                onClick={() => setMenuFor(we)}
-              >
-                <IconMore />
-              </button>
+      {/* 2 · What was done: cardio before, strength, cardio after — each its own zone. */}
+      <div className="zones">
+        <section className="zone" data-zone="cardio" aria-labelledby="zone-pre">
+          <header className="zone-head">
+            <span className="zone-badge" aria-hidden="true">
+              <IconHeartPulse />
+            </span>
+            <div className="grow">
+              <h2 id="zone-pre">Cardio before</h2>
+              <span className="zone-sub">Warm-up</span>
             </div>
-            {sets.length > 0 ? (
-              <>
-                <div className="set-grid" aria-hidden="true">
-                  <span className="set-grid-head">Set</span>
-                  <span className="set-grid-head">{sets[0]?.weightUnit ?? 'kg'}</span>
-                  <span className="set-grid-head">Reps</span>
-                  <span />
-                </div>
-                <div className="set-grid">
-                  {sets.map((st) => (
-                    <PastSetRow key={st.id} set={st} />
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="hint">No sets left in this exercise.</p>
-            )}
-            <button type="button" className="btn block" onClick={() => void guard(() => addPastSet(we.id))}>
+            {preCardio > 0 && <span className="zone-count num">{preCardio}</span>}
+          </header>
+          <div className="zone-body">
+            <CardioSection sessionId={session.id} slot="start" entries={cardio} past />
+          </div>
+        </section>
+
+        <section className="zone" data-zone="strength" aria-labelledby="zone-strength">
+          <header className="zone-head">
+            <span className="zone-badge" aria-hidden="true">
+              <IconDumbbell />
+            </span>
+            <div className="grow">
+              <h2 id="zone-strength">Strength</h2>
+              <span className="zone-sub num">
+                {shown.length} {shown.length === 1 ? 'exercise' : 'exercises'}
+                {summary ? ` · ${summary.completedSets} ${summary.completedSets === 1 ? 'set' : 'sets'}` : ''}
+              </span>
+            </div>
+          </header>
+          <div className="zone-body">
+            {toBlocks(shown, (p) => p.we.supersetGroupId).map((block) => {
+              const cards = block.map(({ we, sets }) => (
+                <section
+                  key={we.id}
+                  className={`card stack exercise ${we.isForeign ? 'foreign' : ''}`}
+                  aria-label={we.performedNameSnapshot}
+                >
+                  <div className="exercise-head">
+                    <div className="stack tight grow">
+                      <h3 className="exercise-name">{we.performedNameSnapshot}</h3>
+                      <div className="chip-row">
+                        {we.isForeign && (
+                          <span className="tag foreign">Outside {session.dayTypeNameSnapshot ?? 'plan'}</span>
+                        )}
+                        {we.plannedExerciseId && we.plannedNameSnapshot !== we.performedNameSnapshot && (
+                          <span className="tag sub">
+                            Replaced {we.plannedNameSnapshot}
+                            {we.substitutionReason ? ` · ${we.substitutionReason}` : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn ghost icon"
+                      aria-label={`Options for ${we.performedNameSnapshot}`}
+                      onClick={() => setMenuFor(we)}
+                    >
+                      <IconMore />
+                    </button>
+                  </div>
+                  {sets.length > 0 ? (
+                    <>
+                      <div className="set-grid" aria-hidden="true">
+                        <span className="set-grid-head">Set</span>
+                        <span className="set-grid-head">{sets[0]?.weightUnit ?? 'kg'}</span>
+                        <span className="set-grid-head">Reps</span>
+                        <span />
+                      </div>
+                      <div className="set-grid">
+                        {sets.map((st) => (
+                          <PastSetRow key={st.id} set={st} />
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="hint">No sets left in this exercise.</p>
+                  )}
+                  <button
+                    type="button"
+                    className="btn ghost block small"
+                    onClick={() => void guard(() => addPastSet(we.id))}
+                  >
+                    <IconPlus />
+                    Add set
+                  </button>
+                </section>
+              ))
+              return block.length > 1 ? (
+                <SupersetFrame key={block[0].we.id} size={block.length}>
+                  {cards}
+                </SupersetFrame>
+              ) : (
+                cards
+              )
+            })}
+            {shown.length === 0 && <p className="hint zone-empty">No exercises yet — add the first one.</p>}
+            <button type="button" className="btn block dashed" onClick={() => setPickingExercise(true)}>
               <IconPlus />
-              Add set
+              Add exercise
             </button>
-          </section>
-        ))
-        return block.length > 1 ? (
-          <SupersetFrame key={block[0].we.id} size={block.length}>
-            {cards}
-          </SupersetFrame>
-        ) : (
-          cards
-        )
-      })}
-      {shown.length === 0 && cardio.length === 0 && <p className="secondary">No exercises in this workout yet.</p>}
-      <button type="button" className="btn block" onClick={() => setPickingExercise(true)}>
-        <IconPlus />
-        Add exercise
-      </button>
+          </div>
+        </section>
 
-      <CardioSection sessionId={session.id} slot="end" entries={cardio} past />
+        <section className="zone" data-zone="cardio" aria-labelledby="zone-post">
+          <header className="zone-head">
+            <span className="zone-badge" aria-hidden="true">
+              <IconHeartPulse />
+            </span>
+            <div className="grow">
+              <h2 id="zone-post">Cardio after</h2>
+              <span className="zone-sub">Cool-down</span>
+            </div>
+            {postCardio > 0 && <span className="zone-count num">{postCardio}</span>}
+          </header>
+          <div className="zone-body">
+            <CardioSection sessionId={session.id} slot="end" entries={cardio} past />
+          </div>
+        </section>
+      </div>
 
-      <div className="card stack">
-        <div className="field">
-          <label htmlFor="s-notes">Notes</label>
+      {/* 3 · Wrap-up: notes and what to do with the workout. */}
+      <div className="wrap-up">
+        <section className="card stack" aria-labelledby="notes-title">
+          <div className="card-head">
+            <h2 id="notes-title" className="row tight">
+              <span className="muted">
+                <IconNote />
+              </span>
+              Notes
+            </h2>
+          </div>
           <textarea
             id="s-notes"
+            aria-labelledby="notes-title"
             key={session.updatedAt}
             defaultValue={session.notes ?? ''}
+            placeholder="How did it go? Anything to remember next time…"
             onBlur={(e) =>
               e.target.value !== (session.notes ?? '') &&
               void guard(() => updateSessionNotes(session.id, { notes: e.target.value }))
             }
           />
-        </div>
-      </div>
+        </section>
 
-      <div className="stack">
-        <button type="button" className="btn block" disabled={performed.length === 0} onClick={() => setSaving(true)}>
-          Save as preset
-        </button>
         <button
           type="button"
-          className="btn block"
-          disabled={performed.length === 0 || routines.length === 0}
-          onClick={() => setUpdatingPreset(true)}
+          className="btn primary big"
+          onClick={() => navigate('/history', { state: { highlight: session.id } })}
         >
-          Update an existing preset…
+          <IconCheck />
+          Save &amp; finish
         </button>
-        <button
-          type="button"
-          className="btn block"
-          disabled={performed.length === 0}
-          onClick={() =>
-            void guard(async () => {
-              if (await getActiveSession()) throw new Error('Finish your current workout first')
-              await startWorkout({
-                dayTypeId: session.dayTypeId,
-                locationId: session.locationId,
-                ...repeatPlan(performed.map((p) => p.we)),
+        <p className="hint text-center">Everything is saved as you type — this takes you back to your history.</p>
+
+        <div className="action-grid" role="group" aria-label="More actions">
+          <button
+            type="button"
+            className="action-tile"
+            disabled={performed.length === 0}
+            onClick={() => setSaving(true)}
+          >
+            <span className="action-icon">
+              <IconStar />
+            </span>
+            <span className="action-label">Save as preset</span>
+            <span className="action-sub">Reuse this workout</span>
+          </button>
+          <button
+            type="button"
+            className="action-tile"
+            disabled={performed.length === 0 || routines.length === 0}
+            onClick={() => setUpdatingPreset(true)}
+          >
+            <span className="action-icon">
+              <IconRefresh />
+            </span>
+            <span className="action-label">Update preset</span>
+            <span className="action-sub">Overwrite with this</span>
+          </button>
+          <button
+            type="button"
+            className="action-tile"
+            disabled={performed.length === 0}
+            onClick={() =>
+              void guard(async () => {
+                if (await getActiveSession()) throw new Error('Finish your current workout first')
+                await startWorkout({
+                  dayTypeId: session.dayTypeId,
+                  locationId: session.locationId,
+                  ...repeatPlan(performed.map((p) => p.we)),
+                })
+                navigate('/')
               })
-              navigate('/')
-            })
-          }
-        >
-          Repeat this workout
-        </button>
-        <button type="button" className="btn block" onClick={() => setExporting(true)}>
-          Export this workout…
-        </button>
-        <button type="button" className="btn ghost danger-text block" onClick={() => setDeleting(true)}>
+            }
+          >
+            <span className="action-icon">
+              <IconRepeat />
+            </span>
+            <span className="action-label">Repeat</span>
+            <span className="action-sub">Start it again now</span>
+          </button>
+          <button type="button" className="action-tile" onClick={() => setExporting(true)}>
+            <span className="action-icon">
+              <IconShare />
+            </span>
+            <span className="action-label">Export</span>
+            <span className="action-sub">JSON or CSV</span>
+          </button>
+        </div>
+
+        <button type="button" className="btn ghost danger-text small self-center" onClick={() => setDeleting(true)}>
+          <IconTrash />
           Delete workout…
         </button>
       </div>
