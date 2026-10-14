@@ -110,3 +110,9 @@ export const IconInbox = () => (
     <path d="M4 13.5h4.5l1.5 2.5h4l1.5-2.5H20" />
   </svg>
 )
+export const IconTranslate = () => (
+  <svg {...base} width={20} height={20}>
+    <path d="M4 5h9M8.5 3v2M6 5c.5 3 2.5 5.5 5.5 7M12 5c-.5 3-3 6-7.5 7.5" />
+    <path d="m12.5 20 4-9 4 9M14 17h5" />
+  </svg>
+)

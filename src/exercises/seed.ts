@@ -368,3 +368,20 @@ export const STARTER_EXERCISES: SeedRow[] = [
 
 /** All aliases of a starter exercise: German names first, then other English names. */
 export const starterAliases = (row: SeedRow): string[] => [...row[4], ...row[5]]
+
+let germanByKey: Map<string, string> | null = null
+
+/** German display name for a starter exercise (looked up by its name or any alias); undefined for custom ones. */
+export function germanNameFor(name: string, aliases: string[], normalize: (s: string) => string): string | undefined {
+  if (!germanByKey) {
+    germanByKey = new Map()
+    for (const row of STARTER_EXERCISES) {
+      for (const n of [row[0], ...row[4], ...row[5]]) germanByKey.set(normalize(n), row[4][0])
+    }
+  }
+  for (const n of [name, ...aliases]) {
+    const hit = germanByKey.get(normalize(n))
+    if (hit) return hit
+  }
+  return undefined
+}

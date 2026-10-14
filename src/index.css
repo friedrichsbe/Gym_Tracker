@@ -2936,3 +2936,22 @@ table.data tbody tr:hover {
   background: var(--accent);
   min-height: 0;
 }
+
+.search-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.search-row .field {
+  min-width: 0;
+}
+.lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+.lang-code {
+  font-size: 0.75rem;
+  font-weight: 600;
+}

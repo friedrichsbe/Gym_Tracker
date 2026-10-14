@@ -24,6 +24,8 @@ function beep() {
   }
 }
 
+const OVER_BANNER_MS = 4000
+
 /** Rest countdown inside the sticky workout bar. Always dismissible, never blocks logging. */
 export function RestTimerBar() {
   const timer = useRestTimer()
@@ -42,6 +44,13 @@ export function RestTimerBar() {
     if (settings.restSound) beep()
   }, [timer, over, settings.restVibrate, settings.restSound])
 
+  // The "rest over" banner is brief: after the signal the bar disappears until the next rest starts.
+  useEffect(() => {
+    if (!timer || !over) return
+    const id = window.setTimeout(stopRest, Math.max(0, OVER_BANNER_MS - (Date.now() - timer.endsAt)))
+    return () => window.clearTimeout(id)
+  }, [timer, over])
+
   if (!timer) {
     if (settings.restAutoStart) return null
     return (
@@ -59,19 +68,26 @@ export function RestTimerBar() {
       <div className="rest-progress" style={{ width: `${pct}%` }} aria-hidden="true" />
       <span className="rest-time num">{formatClock(left)}</span>
       <span className="rest-label small" role="status">
-        {over ? 'Rest over — next set' : `Rest · ${timer.label}`}
+        {over ? 'Resume — next set' : `Rest · ${timer.label}`}
       </span>
-      <span className="rest-actions">
-        <button type="button" className="btn ghost small" aria-label="15 seconds less" onClick={() => adjustRest(-15)}>
-          −15
-        </button>
-        <button type="button" className="btn ghost small" aria-label="15 seconds more" onClick={() => adjustRest(15)}>
-          +15
-        </button>
-        <button type="button" className="btn small" onClick={stopRest}>
-          {over ? 'Done' : 'Skip'}
-        </button>
-      </span>
+      {!over && (
+        <span className="rest-actions">
+          <button
+            type="button"
+            className="btn ghost small"
+            aria-label="15 seconds less"
+            onClick={() => adjustRest(-15)}
+          >
+            −15
+          </button>
+          <button type="button" className="btn ghost small" aria-label="15 seconds more" onClick={() => adjustRest(15)}>
+            +15
+          </button>
+          <button type="button" className="btn small" onClick={stopRest}>
+            Skip
+          </button>
+        </span>
+      )}
     </div>
   )
 }

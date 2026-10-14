@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fitsDay, setExerciseDays } from '../daytypes/dayTypeService'
 import { ExerciseClassification } from './ExerciseClassification'
 import { useExercises, useRecentExerciseIds } from '../data/hooks'
@@ -6,7 +6,17 @@ import type { DayType, EquipmentType, Exercise } from '../domain/types'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
 import { createCustomExercise, normalize, searchExercises, setFavorite } from './exerciseService'
-import { IconStar } from '../ui/icons'
+import { IconStar, IconTranslate } from '../ui/icons'
+import { germanNameFor } from './seed'
+
+const LANG_KEY = 'gt-picker-lang'
+const loadLang = (): 'en' | 'de' => {
+  try {
+    return localStorage.getItem(LANG_KEY) === 'de' ? 'de' : 'en'
+  } catch {
+    return 'en'
+  }
+}
 
 const REASONS = ['Occupied', 'Not available', 'Preferred alternative']
 const EQUIPMENT: EquipmentType[] = ['machine', 'dumbbell', 'barbell', 'cable', 'bodyweight', 'other']
@@ -53,7 +63,22 @@ export function ExercisePicker({
   const [filterEquipment, setFilterEquipment] = useState('')
   const [filterMuscle, setFilterMuscle] = useState('')
   const [onlyFavorites, setOnlyFavorites] = useState(false)
+  const [lang, setLang] = useState<'en' | 'de'>(loadLang)
   const searchRef = useRef<HTMLInputElement>(null)
+
+  const toggleLang = () => {
+    const next = lang === 'en' ? 'de' : 'en'
+    setLang(next)
+    try {
+      localStorage.setItem(LANG_KEY, next)
+    } catch {
+      // preference just won't persist
+    }
+  }
+  const labelOf = useCallback(
+    (e: Exercise) => (lang === 'de' ? (germanNameFor(e.name, e.aliases, normalize) ?? e.name) : e.name),
+    [lang],
+  )
 
   // Sheet opens the dialog in its own effect (child effects run first), so focusing here sticks.
   useEffect(() => {
@@ -87,10 +112,12 @@ export function ExercisePicker({
     }
     const fitting = active
       .filter((e) => fitsDay(e, day, extraFitIds))
-      .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
-    const rest = active.filter((e) => !fitsDay(e, day, extraFitIds)).sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a, b) => rank(a) - rank(b) || labelOf(a).localeCompare(labelOf(b)))
+    const rest = active
+      .filter((e) => !fitsDay(e, day, extraFitIds))
+      .sort((a, b) => labelOf(a).localeCompare(labelOf(b)))
     return { suggested: fitting, others: rest }
-  }, [all, query, recentIds, day, extraFitIds, filterEquipment, filterMuscle, onlyFavorites])
+  }, [all, query, recentIds, day, extraFitIds, filterEquipment, filterMuscle, onlyFavorites, labelOf])
   const muscleOptions = useMemo(
     () => [...new Set(all.filter((e) => !e.archivedAt).flatMap((e) => e.muscleTags))].sort(),
     [all],
@@ -127,7 +154,7 @@ export function ExercisePicker({
     const content = (
       <>
         <span className="grow">
-          <span className="list-title">{e.name}</span>
+          <span className="list-title">{labelOf(e)}</span>
           <span className="list-sub">{e.equipmentType}</span>
         </span>
         {outside && <span className="tag foreign">Outside {specificDay!.name}</span>}
@@ -189,19 +216,30 @@ export function ExercisePicker({
         </div>
       )}
 
-      <div className="field">
-        <label htmlFor="exercise-search" className="sr-only">
-          Search exercises
-        </label>
-        <input
-          id="exercise-search"
-          type="search"
-          autoComplete="off"
-          ref={searchRef}
-          placeholder="Name, alias, muscle or equipment"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+      <div className="search-row">
+        <div className="field grow">
+          <label htmlFor="exercise-search" className="sr-only">
+            Search exercises
+          </label>
+          <input
+            id="exercise-search"
+            type="search"
+            autoComplete="off"
+            ref={searchRef}
+            placeholder="Name, alias, muscle or equipment"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+        <button
+          type="button"
+          className="btn ghost icon lang-btn"
+          aria-label={lang === 'en' ? 'Show German names' : 'Show English names'}
+          onClick={toggleLang}
+        >
+          <IconTranslate />
+          <span className="lang-code">{lang.toUpperCase()}</span>
+        </button>
       </div>
 
       <div className="filter-bar">
