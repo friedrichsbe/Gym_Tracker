@@ -5,7 +5,7 @@ import { fitsDay, setExerciseDays } from '../daytypes/dayTypeService'
 import { ExerciseClassification } from './ExerciseClassification'
 import { useDayTypes, useExercises, useSettings } from '../data/hooks'
 import type { EquipmentType, Exercise } from '../domain/types'
-import { IconChevronLeft, IconChevronRight, IconPlus } from '../ui/icons'
+import { IconChevronLeft, IconChevronRight, IconPlus, IconStar } from '../ui/icons'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
 import {
@@ -287,60 +287,88 @@ function ExerciseForm({
           })
         }}
       >
-        <div className="field">
-          <label htmlFor="e-name">Name</label>
-          <input id="e-name" type="text" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />
+        <section className="form-section" aria-label="Basics">
+          <div className="row top">
+            <div className="field grow">
+              <label htmlFor="e-name">Name</label>
+              <input
+                id="e-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+            <div className="field">
+              <span className="field-label">Favorite</span>
+              <button
+                type="button"
+                className="btn icon fav-toggle"
+                aria-pressed={favorite}
+                aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+                title="Favorites are listed first when picking exercises"
+                onClick={() => setFavoriteFlag((v) => !v)}
+              >
+                <IconStar filled={favorite} />
+              </button>
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="e-alias">Other names</label>
+            <input
+              id="e-alias"
+              type="text"
+              value={aliases}
+              onChange={(e) => setAliases(e.target.value)}
+              placeholder="e.g. Beinpresse, Sled press"
+              autoComplete="off"
+            />
+            <span className="hint">Comma separated. Search finds the exercise by these too.</span>
+          </div>
+        </section>
+
+        <section className="form-section" aria-label="Classification">
+          <h3 className="section-label">Classification</h3>
+          <div className="field">
+            <label htmlFor="e-equipment">Equipment</label>
+            <select id="e-equipment" value={equipment} onChange={(e) => setEquipment(e.target.value as EquipmentType)}>
+              {EQUIPMENT.map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </select>
+          </div>
+          <ExerciseClassification muscles={muscles} onMuscles={setMuscles} dayIds={dayIds} onDayIds={setDayIdsEdit} />
+        </section>
+
+        <section className="form-section" aria-label="Rest timer">
+          <h3 className="section-label">Rest timer</h3>
+          <div className="field">
+            <label htmlFor="e-rest">Rest after a set (seconds)</label>
+            <input
+              id="e-rest"
+              type="text"
+              inputMode="numeric"
+              value={rest}
+              onChange={(e) => setRest(e.target.value.replace(/\D/g, ''))}
+              placeholder={`Default (${defaultRest})`}
+              aria-invalid={restInvalid}
+            />
+            <span className={`hint ${restInvalid ? 'danger-text' : ''}`}>
+              {restInvalid ? 'Use 5–1800 seconds, or leave empty.' : 'Leave empty to use your default rest.'}
+            </span>
+          </div>
+        </section>
+
+        <div className="sticky-bottom">
+          <button type="submit" className="btn primary big" disabled={!name.trim() || restInvalid}>
+            {existing ? 'Save' : 'Create exercise'}
+          </button>
         </div>
-        <div className="field">
-          <label htmlFor="e-alias">Other names (comma separated)</label>
-          <input
-            id="e-alias"
-            type="text"
-            value={aliases}
-            onChange={(e) => setAliases(e.target.value)}
-            placeholder="e.g. Beinpresse, Sled press"
-            autoComplete="off"
-          />
-          <span className="hint">
-            The search also finds the exercise by these names. Standard exercises already include their German and
-            English names — add your own on top.
-          </span>
-        </div>
-        <div className="field">
-          <label htmlFor="e-equipment">Equipment</label>
-          <select id="e-equipment" value={equipment} onChange={(e) => setEquipment(e.target.value as EquipmentType)}>
-            {EQUIPMENT.map((x) => (
-              <option key={x}>{x}</option>
-            ))}
-          </select>
-        </div>
-        <ExerciseClassification muscles={muscles} onMuscles={setMuscles} dayIds={dayIds} onDayIds={setDayIdsEdit} />
-        <label className="check-row">
-          <input type="checkbox" checked={favorite} onChange={(e) => setFavoriteFlag(e.target.checked)} />
-          <span>Favorite (listed first when picking exercises)</span>
-        </label>
-        <div className="field">
-          <label htmlFor="e-rest">Rest after a set (seconds)</label>
-          <input
-            id="e-rest"
-            type="text"
-            inputMode="numeric"
-            value={rest}
-            onChange={(e) => setRest(e.target.value.replace(/\D/g, ''))}
-            placeholder={`Default (${defaultRest})`}
-            aria-invalid={restInvalid}
-          />
-          <span className="hint">
-            {restInvalid ? 'Use 5–1800 seconds, or leave empty.' : 'Empty = your default rest.'}
-          </span>
-        </div>
-        <button type="submit" className="btn primary" disabled={!name.trim() || restInvalid}>
-          {existing ? 'Save' : 'Create exercise'}
-        </button>
       </form>
 
       {existing && (
-        <div className="stack">
+        <section className="form-section" aria-label="Manage">
+          <h3 className="section-label">Manage</h3>
           <p className="hint">
             {u
               ? `Used in ${u.workouts} workouts (${u.sets} sets) and ${u.presets} presets.`
@@ -348,7 +376,7 @@ function ExerciseForm({
           </p>
           {!existing.archivedAt && (
             <button type="button" className="btn block" onClick={() => setMerging(true)}>
-              This is a duplicate — merge into another…
+              Merge into another exercise…
             </button>
           )}
           {existing.archivedAt ? (
@@ -382,8 +410,10 @@ function ExerciseForm({
               Archive exercise
             </button>
           )}
-          <p className="hint">Archiving hides it from pickers; workouts and statistics that use it stay intact.</p>
-        </div>
+          <p className="hint">
+            Merging is for duplicates. Archiving hides it from pickers; workouts and statistics stay intact.
+          </p>
+        </section>
       )}
 
       {existing && (

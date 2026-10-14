@@ -3106,3 +3106,27 @@ table.data tbody tr:hover {
 .page-date {
   margin-top: calc(var(--space-3) * -1);
 }
+
+/* Exercise edit sheet: titled sections with a divider instead of one long run of fields */
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+.form-section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.fav-toggle {
+  width: var(--touch);
+  min-height: var(--touch);
+  padding: 0;
+  color: var(--muted);
+}
+.fav-toggle[aria-pressed='true'] {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-subtle);
+}

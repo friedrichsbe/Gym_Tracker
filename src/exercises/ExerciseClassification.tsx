@@ -52,7 +52,7 @@ export function ExerciseClassification({ muscles, onMuscles, dayIds, onDayIds }:
   return (
     <div className="stack">
       <div className="field">
-        <span className="field-label">Muscle groups (work in every training split)</span>
+        <span className="field-label">Muscle groups</span>
         <div className="chip-row" role="group" aria-label="Muscle groups">
           {muscleOptions.map((m) => (
             <button
@@ -66,9 +66,10 @@ export function ExerciseClassification({ muscles, onMuscles, dayIds, onDayIds }:
             </button>
           ))}
         </div>
+        <span className="hint">They work in every training split.</span>
       </div>
       <div className="field">
-        <span className="field-label">Belongs to these training days</span>
+        <span className="field-label">Training days</span>
         {active.length === 0 ? (
           <span className="hint">No training days yet — add some under Settings.</span>
         ) : (
@@ -84,10 +85,7 @@ export function ExerciseClassification({ muscles, onMuscles, dayIds, onDayIds }:
             </div>
           </details>
         )}
-        <span className="hint">
-          Without a day or muscle group the exercise only shows up under “Other exercises”. Picking the muscles is the
-          easiest way to cover every split.
-        </span>
+        <span className="hint">With neither a muscle group nor a day, it only appears under “Other exercises”.</span>
       </div>
     </div>
   )
