@@ -4,10 +4,21 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useDayTypes } from '../data/hooks'
 import { createRoutineFromSession } from '../routines/routineService'
 import { formatDate, formatDurationShort, formatVolume } from '../ui/format'
-import { NumericField } from '../ui/NumericField'
 import { SupersetFrame } from '../workout/SupersetFrame'
 import { toBlocks } from '../workout/supersets'
-import { IconChevronLeft } from '../ui/icons'
+import { IconChevronLeft, IconMore, IconPlus } from '../ui/icons'
+import { ExercisePicker } from '../exercises/ExercisePicker'
+import type { WorkoutExercise } from '../domain/types'
+import { PastSetRow } from './PastSetRow'
+import { SessionDetailsForm } from './SessionDetailsForm'
+import { minutesBetween } from './sessionTime'
+import {
+  addPastExercise,
+  addPastSet,
+  changePerformedExercise,
+  removePastExercise,
+  updateSessionDetails,
+} from './sessionEditService'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
 import {
@@ -17,28 +28,26 @@ import {
   startWorkout,
   summarizeSession,
   updateSessionNotes,
-  updateSet,
 } from '../workout/workoutService'
-
-const TYPE_TAG: Record<string, string> = {
-  warmup: 'Warm-up',
-  drop: 'Drop',
-  failure: 'Failure',
-  other: 'Other',
-  working: '',
-}
 
 export function SessionDetailPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const { guard, show } = useToast()
-  const { active: days } = useDayTypes()
+  const { active: days, archived: archivedDays } = useDayTypes()
   const view = useLiveQuery(() => loadSessionView(id), [id])
   const summary = useLiveQuery(() => summarizeSession(id), [id])
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const justFinished = (location.state as { justFinished?: boolean } | null)?.justFinished === true
+  const [editingDetails, setEditingDetails] = useState(false)
+  const [pickingExercise, setPickingExercise] = useState(false)
+  const [menuFor, setMenuFor] = useState<WorkoutExercise | null>(null)
+  const [changingFor, setChangingFor] = useState<WorkoutExercise | null>(null)
+  const [removingFor, setRemovingFor] = useState<WorkoutExercise | null>(null)
+  const navState = location.state as { justFinished?: boolean; justCreated?: boolean } | null
+  const justFinished = navState?.justFinished === true
+  const justCreated = navState?.justCreated === true
 
   if (view === undefined) return null
   if (!view) {
@@ -54,6 +63,9 @@ export function SessionDetailPage() {
   const { session, exercises } = view
   const title = [session.dayTypeNameSnapshot, session.routineNameSnapshot].filter(Boolean).join(' · ') || 'Workout'
   const performed = exercises.filter((e) => e.sets.some((s) => s.isCompleted))
+  // Everything that can still be edited: entries with sets, plus completed ones whose sets were all deleted.
+  const shown = exercises.filter((e) => e.sets.length > 0 || e.we.status !== 'skipped')
+  const sessionDay = [...days, ...archivedDays].find((d) => d.id === session.dayTypeId) ?? null
 
   return (
     <main className="content">
@@ -61,6 +73,15 @@ export function SessionDetailPage() {
         <IconChevronLeft />
         History
       </Link>
+
+      {justCreated && (
+        <div className="card stack callout" role="status">
+          <h2>Workout created</h2>
+          <p className="secondary small">
+            Add the exercises and sets you did. Set values stay empty until you type them — nothing is guessed.
+          </p>
+        </div>
+      )}
 
       {justFinished && (
         <div className="card stack callout" role="status">
@@ -103,57 +124,60 @@ export function SessionDetailPage() {
         )}
       </div>
 
-      {toBlocks(performed, (p) => p.we.supersetGroupId).map((block) => {
+      <button type="button" className="btn block" onClick={() => setEditingDetails(true)}>
+        Edit date, gym &amp; day
+      </button>
+
+      {toBlocks(shown, (p) => p.we.supersetGroupId).map((block) => {
         const cards = block.map(({ we, sets }) => (
           <section
             key={we.id}
             className={`card stack exercise ${we.isForeign ? 'foreign' : ''}`}
             aria-label={we.performedNameSnapshot}
           >
-            <div className="stack tight">
-              <h3 className="exercise-name">{we.performedNameSnapshot}</h3>
-              <div className="chip-row">
-                {we.isForeign && <span className="tag foreign">Outside {session.dayTypeNameSnapshot ?? 'plan'}</span>}
-                {we.plannedExerciseId && we.plannedNameSnapshot !== we.performedNameSnapshot && (
-                  <span className="tag sub">
-                    Replaced {we.plannedNameSnapshot}
-                    {we.substitutionReason ? ` · ${we.substitutionReason}` : ''}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="set-grid" aria-hidden="true">
-              <span className="set-grid-head">Set</span>
-              <span className="set-grid-head">{sets[0]?.weightUnit ?? 'kg'}</span>
-              <span className="set-grid-head">Reps</span>
-              <span />
-            </div>
-            <div className="set-grid">
-              {sets
-                .filter((s) => s.isCompleted)
-                .map((s) => (
-                  <div key={s.id} className="set-row done">
-                    <span
-                      className={`set-badge num ${s.setType === 'warmup' ? 'warmup' : ''}`}
-                      title={TYPE_TAG[s.setType] || 'Working set'}
-                    >
-                      {s.setType === 'warmup' ? 'W' : s.setNumber}
+            <div className="exercise-head">
+              <div className="stack tight grow">
+                <h3 className="exercise-name">{we.performedNameSnapshot}</h3>
+                <div className="chip-row">
+                  {we.isForeign && <span className="tag foreign">Outside {session.dayTypeNameSnapshot ?? 'plan'}</span>}
+                  {we.plannedExerciseId && we.plannedNameSnapshot !== we.performedNameSnapshot && (
+                    <span className="tag sub">
+                      Replaced {we.plannedNameSnapshot}
+                      {we.substitutionReason ? ` · ${we.substitutionReason}` : ''}
                     </span>
-                    <NumericField
-                      label={`Set ${s.setNumber} weight`}
-                      value={s.weightValue}
-                      onCommit={(v) => void guard(() => updateSet(s.id, { weightValue: v }))}
-                    />
-                    <NumericField
-                      label={`Set ${s.setNumber} reps`}
-                      integer
-                      value={s.reps}
-                      onCommit={(v) => void guard(() => updateSet(s.id, { reps: v }))}
-                    />
-                    <span className="set-type-label">{TYPE_TAG[s.setType]}</span>
-                  </div>
-                ))}
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn ghost icon"
+                aria-label={`Options for ${we.performedNameSnapshot}`}
+                onClick={() => setMenuFor(we)}
+              >
+                <IconMore />
+              </button>
             </div>
+            {sets.length > 0 ? (
+              <>
+                <div className="set-grid" aria-hidden="true">
+                  <span className="set-grid-head">Set</span>
+                  <span className="set-grid-head">{sets[0]?.weightUnit ?? 'kg'}</span>
+                  <span className="set-grid-head">Reps</span>
+                  <span />
+                </div>
+                <div className="set-grid">
+                  {sets.map((st) => (
+                    <PastSetRow key={st.id} set={st} />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="hint">No sets left in this exercise.</p>
+            )}
+            <button type="button" className="btn block" onClick={() => void guard(() => addPastSet(we.id))}>
+              <IconPlus />
+              Add set
+            </button>
           </section>
         ))
         return block.length > 1 ? (
@@ -164,7 +188,11 @@ export function SessionDetailPage() {
           cards
         )
       })}
-      {performed.length === 0 && <p className="secondary">No completed sets in this workout.</p>}
+      {shown.length === 0 && <p className="secondary">No exercises in this workout yet.</p>}
+      <button type="button" className="btn block" onClick={() => setPickingExercise(true)}>
+        <IconPlus />
+        Add exercise
+      </button>
 
       <div className="card stack">
         <div className="field">
@@ -222,6 +250,96 @@ export function SessionDetailPage() {
           })
         }
       />
+
+      <Sheet open={editingDetails} title="Edit workout details" onClose={() => setEditingDetails(false)}>
+        <p className="secondary small">
+          Changing the date moves the whole workout. A new gym or day applies to every set and exercise of it.
+        </p>
+        <SessionDetailsForm
+          initial={{
+            startedAt: session.startedAt,
+            durationMinutes: minutesBetween(session.startedAt, session.endedAt),
+            locationId: session.locationId,
+            dayTypeId: session.dayTypeId,
+          }}
+          submitLabel="Save changes"
+          onSubmit={(v) =>
+            void guard(async () => {
+              const initialMinutes = minutesBetween(session.startedAt, session.endedAt)
+              await updateSessionDetails(session.id, {
+                ...(v.startedAt !== session.startedAt ? { startedAt: v.startedAt } : {}),
+                ...(v.durationMinutes !== initialMinutes ? { durationMinutes: v.durationMinutes } : {}),
+                ...(v.locationId !== session.locationId ? { locationId: v.locationId } : {}),
+                ...(v.dayTypeId !== session.dayTypeId ? { dayTypeId: v.dayTypeId } : {}),
+              })
+              setEditingDetails(false)
+            })
+          }
+        />
+      </Sheet>
+
+      <ExercisePicker
+        open={pickingExercise}
+        mode="add"
+        day={sessionDay}
+        onClose={() => setPickingExercise(false)}
+        onPick={(exercise) => void guard(() => addPastExercise(session.id, exercise.id))}
+      />
+      <ExercisePicker
+        open={changingFor !== null}
+        mode="add"
+        title="Change exercise"
+        day={sessionDay}
+        onClose={() => setChangingFor(null)}
+        onPick={(exercise) => {
+          const target = changingFor
+          if (target) void guard(() => changePerformedExercise(target.id, exercise.id))
+        }}
+      />
+
+      <Sheet open={menuFor !== null} title={menuFor?.performedNameSnapshot ?? ''} onClose={() => setMenuFor(null)}>
+        <button
+          type="button"
+          className="btn block"
+          onClick={() => {
+            setChangingFor(menuFor)
+            setMenuFor(null)
+          }}
+        >
+          Change exercise (I picked the wrong one)
+        </button>
+        <button
+          type="button"
+          className="btn ghost danger-text block"
+          onClick={() => {
+            setRemovingFor(menuFor)
+            setMenuFor(null)
+          }}
+        >
+          Remove from this workout…
+        </button>
+      </Sheet>
+
+      <Sheet open={removingFor !== null} title="Remove exercise?" onClose={() => setRemovingFor(null)}>
+        <p>
+          Remove <strong>{removingFor?.performedNameSnapshot}</strong> and all its sets from this workout? This can’t be
+          undone.
+        </p>
+        <button
+          type="button"
+          className="btn danger solid block"
+          onClick={() => {
+            const target = removingFor
+            setRemovingFor(null)
+            if (target) void guard(() => removePastExercise(target.id))
+          }}
+        >
+          Remove exercise
+        </button>
+        <button type="button" className="btn block" onClick={() => setRemovingFor(null)}>
+          Cancel
+        </button>
+      </Sheet>
 
       <Sheet open={deleting} title="Delete this workout?" onClose={() => setDeleting(false)}>
         <p>

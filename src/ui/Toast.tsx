@@ -1,3 +1,4 @@
+import Dexie from 'dexie'
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ToastContext, type ToastApi } from './toastContext'
 
@@ -34,9 +35,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         console.error(err)
         const detail = err instanceof Error ? err.message : String(err)
-        show(`Couldn't save: ${detail}. Your data may not be stored — export a backup if this repeats.`, {
-          kind: 'error',
-        })
+        // Only storage failures warrant the backup warning; a rejected input ("name already exists") is just a message.
+        const storageProblem =
+          err instanceof Dexie.DexieError || (err instanceof DOMException && err.name === 'QuotaExceededError')
+        show(
+          storageProblem
+            ? `Couldn't save: ${detail}. Your data may not be stored — export a backup if this repeats.`
+            : detail.replace(/\.$/, '') + '.',
+          { kind: 'error' },
+        )
         return undefined
       }
     },

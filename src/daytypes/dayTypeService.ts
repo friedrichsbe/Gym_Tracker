@@ -141,3 +141,23 @@ export async function removeExerciseFromDayType(dayTypeId: string, exerciseId: s
     updatedAt: nowIso(),
   })
 }
+
+/**
+ * Sets exactly which training days an exercise is assigned to (explicitly). Days not in the list lose the
+ * assignment; days the exercise still fits through its muscle groups are unaffected by this. Works for archived
+ * days too, so the assignment stays complete when the user later switches to another split.
+ */
+export async function setExerciseDays(exerciseId: string, dayTypeIds: string[]): Promise<void> {
+  const want = new Set(dayTypeIds)
+  await db.transaction('rw', db.dayTypes, async () => {
+    for (const day of await db.dayTypes.toArray()) {
+      if (day.matchAll) continue // fits everything anyway
+      const has = day.exerciseIds.includes(exerciseId)
+      if (has === want.has(day.id)) continue
+      await db.dayTypes.update(day.id, {
+        exerciseIds: has ? day.exerciseIds.filter((x) => x !== exerciseId) : [...day.exerciseIds, exerciseId],
+        updatedAt: nowIso(),
+      })
+    }
+  })
+}

@@ -4,6 +4,9 @@ import { NumericField } from '../ui/NumericField'
 import { IconCheck } from '../ui/icons'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
+import { useSettings } from '../data/hooks'
+import { getRestSuggestion } from './restService'
+import { startRest } from './restTimer'
 import { completeSet, deleteSet, restoreSet, uncompleteSet, updateSet } from './workoutService'
 
 const TYPE_LABEL: Record<SetType, string> = {
@@ -22,6 +25,7 @@ const LOAD_LABEL: Record<LoadType, string> = {
 
 export function SetRow({ set, label }: { set: SetRecord; label: string }) {
   const { guard, show } = useToast()
+  const settings = useSettings()
   const [menu, setMenu] = useState(false)
   const unit = set.weightUnit
   const weightHint = set.loadType === 'bodyweight' ? `BW +${unit}` : set.loadType === 'assisted' ? `−${unit}` : unit
@@ -53,7 +57,16 @@ export function SetRow({ set, label }: { set: SetRecord; label: string }) {
           className="complete-btn"
           aria-pressed={set.isCompleted}
           aria-label={set.isCompleted ? `${label} completed. Tap to undo` : `Complete ${label}`}
-          onClick={() => void guard(() => (set.isCompleted ? uncompleteSet(set.id) : completeSet(set.id)))}
+          onClick={() =>
+            void guard(async () => {
+              if (set.isCompleted) return uncompleteSet(set.id)
+              await completeSet(set.id)
+              // Rest timer: only after working sets, and in a superset only after the last member of the round.
+              if (!settings.restAutoStart) return
+              const rest = await getRestSuggestion(set.id)
+              if (rest) startRest(rest.seconds, rest.label)
+            })
+          }
         >
           {set.isCompleted && <IconCheck />}
         </button>

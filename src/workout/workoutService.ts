@@ -105,13 +105,13 @@ async function defaultsFor(
 // Internal helpers (call inside a transaction)
 // ---------------------------------------------------------------------------
 
-async function locationInfo(locationId: string | null): Promise<{ id: string | null; name: string | null }> {
+export async function locationInfo(locationId: string | null): Promise<{ id: string | null; name: string | null }> {
   if (!locationId) return { id: null, name: null }
   const loc = await db.locations.get(locationId)
   return loc ? { id: loc.id, name: loc.name } : { id: null, name: null }
 }
 
-function blankSet(args: {
+export function blankSet(args: {
   sessionId: string
   workoutExerciseId: string
   setNumber: number
@@ -139,7 +139,7 @@ function blankSet(args: {
   }
 }
 
-async function renumberSets(workoutExerciseId: string): Promise<void> {
+export async function renumberSets(workoutExerciseId: string): Promise<void> {
   const sets = (await db.sets.where('workoutExerciseId').equals(workoutExerciseId).toArray()).sort(
     (a, b) => a.setNumber - b.setNumber || a.createdAt.localeCompare(b.createdAt),
   )
@@ -147,7 +147,7 @@ async function renumberSets(workoutExerciseId: string): Promise<void> {
   if (changed.length) await db.sets.bulkPut(changed)
 }
 
-async function normalizePositions(sessionId: string): Promise<void> {
+export async function normalizePositions(sessionId: string): Promise<void> {
   const list = (await db.workoutExercises.where('sessionId').equals(sessionId).toArray()).sort(
     (a, b) => a.position - b.position,
   )
@@ -167,7 +167,7 @@ async function requireActive(sessionId: string): Promise<WorkoutSession> {
 }
 
 /** Is this exercise outside the session's day type? Exercises of the session's own routine always count as inside. */
-async function isForeignFor(session: WorkoutSession, exercise: Exercise): Promise<boolean> {
+export async function isForeignFor(session: WorkoutSession, exercise: Exercise): Promise<boolean> {
   if (!session.dayTypeId) return false
   const day = await db.dayTypes.get(session.dayTypeId)
   if (!day) return false
@@ -594,7 +594,7 @@ export async function skipExercise(workoutExerciseId: string, skipped: boolean):
 }
 
 /** Re-establishes the superset invariants after anything moved or was removed. */
-async function normalizeGroups(sessionId: string): Promise<void> {
+export async function normalizeGroups(sessionId: string): Promise<void> {
   const list = (await db.workoutExercises.where('sessionId').equals(sessionId).toArray()).sort(
     (a, b) => a.position - b.position,
   )
@@ -793,12 +793,14 @@ export async function uncompleteSet(setId: string): Promise<void> {
   await db.sets.update(setId, { isCompleted: false, performedAt: null, updatedAt: nowIso() })
 }
 
-/** Returns the deleted record so the UI can offer undo via `restoreSet`. */
+/**
+ * Returns the deleted record so the UI can offer undo via `restoreSet`.
+ * Works for running and finished workouts alike (finished ones can be corrected in History).
+ */
 export async function deleteSet(setId: string): Promise<SetRecord | undefined> {
   return db.transaction('rw', TABLES(), async () => {
     const set = await db.sets.get(setId)
     if (!set) return undefined
-    await requireActive(set.sessionId)
     await db.sets.delete(setId)
     await renumberSets(set.workoutExerciseId)
     return set

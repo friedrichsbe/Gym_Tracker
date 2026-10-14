@@ -12,6 +12,8 @@ import { IconDumbbell, IconPin, IconPlus } from '../ui/icons'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
 import { ExerciseCard } from './ExerciseCard'
+import { RestTimerBar } from './RestTimerBar'
+import { stopRest } from './restTimer'
 import { SupersetFrame } from './SupersetFrame'
 import { toBlocks } from './supersets'
 import {
@@ -73,6 +75,7 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
         <button type="button" className="btn primary" onClick={() => setFinishing(true)}>
           Finish
         </button>
+        <RestTimerBar />
       </div>
 
       <div className="page-title">
@@ -163,12 +166,14 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
         onFinish={async (notes) => {
           const summary = await guard(() => finishWorkout({ sessionId: session.id, notes }))
           if (summary) {
+            stopRest()
             show(`Workout saved · ${summary.completedSets} sets`)
             navigate(`/history/${session.id}`, { state: { justFinished: true } })
           }
         }}
         onDiscard={async () => {
           await guard(() => discardWorkout(session.id))
+          stopRest()
           show('Workout discarded')
         }}
       />

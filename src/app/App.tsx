@@ -3,6 +3,8 @@ import { HashRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { ensureSchemaMetadata } from '../data/settings'
 import { useSettingsLoaded } from '../data/hooks'
 import { ensureDefaultDayTypes } from '../daytypes/dayTypeService'
+import { refreshStarterAliases } from '../exercises/exerciseService'
+import { ExercisesPage } from '../exercises/ExercisesPage'
 import { HistoryPage } from '../history/HistoryPage'
 import { SessionDetailPage } from '../history/SessionDetail'
 import { RoutineEditorPage } from '../routines/RoutineEditor'
@@ -25,7 +27,10 @@ function Shell() {
   }, [])
   // After onboarding (which applies the chosen split) make sure older installs/imports have day types too.
   useEffect(() => {
-    if (onboarded) void ensureDefaultDayTypes()
+    if (onboarded) {
+      void ensureDefaultDayTypes()
+      void refreshStarterAliases() // standard exercises always carry their German and English names
+    }
   }, [onboarded])
 
   const theme = settings?.theme ?? 'system'
@@ -67,6 +72,7 @@ function Shell() {
           <Route path="/" element={<WorkoutPage />} />
           <Route path="/routines" element={<RoutinesPage />} />
           <Route path="/routines/:id" element={<RoutineEditorPage />} />
+          <Route path="/exercises" element={<ExercisesPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/history/:id" element={<SessionDetailPage />} />
           <Route path="/progress" element={<ProgressPage />} />

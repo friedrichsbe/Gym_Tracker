@@ -1,9 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { UpdateBanner } from '../app/UpdateBanner'
 import { DayTypesPanel } from '../daytypes/DayTypesPanel'
 import { DataPanel } from '../portability/DataPanel'
+import { RestTimerPanel } from './RestTimerPanel'
 import { useLocations, useSettings } from '../data/hooks'
 import { updateSettings } from '../data/settings'
 import type { AccentColor, DarkStyle, LightStyle, Location, Theme, WeightUnit } from '../domain/types'
@@ -198,6 +199,19 @@ export function SettingsPage() {
           Warm-ups are always saved and always visible in the workout and history. This only decides whether they count
           in the numbers.
         </p>
+      </section>
+
+      <RestTimerPanel />
+
+      <section className="card stack" aria-labelledby="ex-manage">
+        <h2 id="ex-manage">Exercises</h2>
+        <p className="card-desc">
+          Rename exercises, add other names, set muscle groups and a rest time, merge duplicates, archive what you no
+          longer use.
+        </p>
+        <Link to="/exercises" className="btn block">
+          Manage exercises
+        </Link>
       </section>
 
       <DataPanel />

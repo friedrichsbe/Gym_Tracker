@@ -2772,3 +2772,68 @@ table.data tbody tr:hover {
 .style-preview[data-preview='glow'] i:last-child {
   background: linear-gradient(90deg, var(--accent), var(--glow-b));
 }
+
+/* ---------- Rest timer (second row of the sticky workout bar) ---------- */
+.workout-bar {
+  flex-wrap: wrap;
+}
+.rest-row {
+  flex: 1 0 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.rest-bar {
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  background: var(--accent-subtle);
+}
+.rest-progress {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  pointer-events: none;
+  transition: width 0.25s linear;
+}
+.rest-bar > *:not(.rest-progress) {
+  position: relative;
+}
+.rest-time {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  min-width: 3.2ch;
+}
+.rest-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-2);
+}
+.rest-actions {
+  display: flex;
+  gap: var(--space-1);
+}
+.rest-bar.over {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+}
+.rest-bar.over .rest-time,
+.rest-bar.over .rest-label {
+  color: var(--accent-text);
+  font-weight: 700;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rest-progress {
+    transition: none;
+  }
+}
+
+/* Past-workout editing: sets without any numbers yet are easy to spot. */
+.set-row.incomplete .num-input {
+  border-color: var(--warning-border);
+}

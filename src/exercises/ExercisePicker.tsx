@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { fitsDay, addExerciseToDayType } from '../daytypes/dayTypeService'
-import { useDayTypes, useExercises, useRecentExerciseIds } from '../data/hooks'
+import { fitsDay, setExerciseDays } from '../daytypes/dayTypeService'
+import { ExerciseClassification } from './ExerciseClassification'
+import { useExercises, useRecentExerciseIds } from '../data/hooks'
 import type { DayType, EquipmentType, Exercise } from '../domain/types'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
@@ -19,6 +20,8 @@ interface Props {
   extraFitIds?: ReadonlySet<string>
   /** Name of the exercise being replaced (replace mode). */
   replacing?: string
+  /** Overrides the sheet title. */
+  title?: string
   confirmLabel?: (count: number) => string
   onClose: () => void
   onPick?: (exercise: Exercise, reason?: string) => void
@@ -35,16 +38,17 @@ export function ExercisePicker({
   onClose,
   onPick,
   onConfirm,
+  title: titleOverride,
 }: Props) {
   const all = useExercises()
   const recentIds = useRecentExerciseIds()
-  const { active: dayTypes } = useDayTypes()
   const { guard } = useToast()
   const [query, setQuery] = useState('')
   const [reason, setReason] = useState<string | undefined>()
   const [equipment, setEquipment] = useState<EquipmentType>('machine')
   const [selected, setSelected] = useState<string[]>([])
   const [belongsTo, setBelongsTo] = useState<string[] | null>(null)
+  const [newMuscles, setNewMuscles] = useState<string[]>([])
   const searchRef = useRef<HTMLInputElement>(null)
 
   // Sheet opens the dialog in its own effect (child effects run first), so focusing here sticks.
@@ -89,6 +93,7 @@ export function ExercisePicker({
     setReason(undefined)
     setSelected([])
     setBelongsTo(null)
+    setNewMuscles([])
   }
   const close = () => {
     reset()
@@ -131,11 +136,12 @@ export function ExercisePicker({
   }
 
   const title =
-    mode === 'replace'
+    titleOverride ??
+    (mode === 'replace'
       ? 'Replace exercise'
       : mode === 'multi'
         ? 'Pick exercises'
-        : `Add exercise${specificDay ? ` · ${specificDay.name}` : ''}`
+        : `Add exercise${specificDay ? ` · ${specificDay.name}` : ''}`)
 
   return (
     <Sheet open={open} title={title} onClose={close}>
@@ -210,37 +216,23 @@ export function ExercisePicker({
               ))}
             </select>
           </div>
-          {dayTypes.some((d) => !d.matchAll) && (
-            <div className="stack tight">
-              <span className="field-label">Counts as</span>
-              <div className="chip-row" role="group" aria-label="Counts as">
-                {dayTypes
-                  .filter((d) => !d.matchAll)
-                  .map((d) => (
-                    <button
-                      key={d.id}
-                      type="button"
-                      className="chip"
-                      aria-pressed={chosenDays.includes(d.id)}
-                      onClick={() =>
-                        setBelongsTo(
-                          chosenDays.includes(d.id) ? chosenDays.filter((x) => x !== d.id) : [...chosenDays, d.id],
-                        )
-                      }
-                    >
-                      {d.name}
-                    </button>
-                  ))}
-              </div>
-            </div>
-          )}
+          <ExerciseClassification
+            muscles={newMuscles}
+            onMuscles={setNewMuscles}
+            dayIds={chosenDays}
+            onDayIds={setBelongsTo}
+          />
           <button
             type="button"
             className="btn primary"
             onClick={() =>
               void guard(async () => {
-                const { exercise, created } = await createCustomExercise({ name: query, equipmentType: equipment })
-                if (created) for (const id of chosenDays) await addExerciseToDayType(id, exercise.id)
+                const { exercise, created } = await createCustomExercise({
+                  name: query,
+                  equipmentType: equipment,
+                  muscleTags: newMuscles,
+                })
+                if (created) await setExerciseDays(exercise.id, chosenDays)
                 if (mode === 'multi') {
                   setSelected((xs) => (xs.includes(exercise.id) ? xs : [...xs, exercise.id]))
                   setQuery('')

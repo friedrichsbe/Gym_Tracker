@@ -5,7 +5,8 @@ import { db } from '../data/db'
 import { useDayTypes, useLocations } from '../data/hooks'
 import { instant } from '../domain/time'
 import { formatDate, formatDurationShort, formatVolume } from '../ui/format'
-import { IconCalendar } from '../ui/icons'
+import { IconCalendar, IconPlus } from '../ui/icons'
+import { PastWorkoutSheet } from './PastWorkoutSheet'
 import { summarizeSession } from '../workout/workoutService'
 
 export function HistoryPage() {
@@ -13,6 +14,7 @@ export function HistoryPage() {
   const { active: locations, archived } = useLocations()
   const [day, setDay] = useState<string>('all')
   const [location, setLocation] = useState<string>('all')
+  const [logging, setLogging] = useState(false)
   const sessions = useLiveQuery(
     async () =>
       (await db.sessions.where('status').equals('completed').toArray()).sort(
@@ -45,7 +47,12 @@ export function HistoryPage() {
     <main className="content">
       <div className="page-head">
         <h1>History</h1>
+        <button type="button" className="btn small" onClick={() => setLogging(true)}>
+          <IconPlus />
+          Log past workout
+        </button>
       </div>
+      <PastWorkoutSheet open={logging} onClose={() => setLogging(false)} />
 
       <div className="filter-bar">
         <div className="field">

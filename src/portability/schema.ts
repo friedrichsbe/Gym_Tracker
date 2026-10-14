@@ -31,6 +31,7 @@ export const exerciseSchema = z.object({
   movementPattern: z.string().max(100).optional(),
   muscleTags: z.array(z.string().max(100)).max(50).default([]),
   isCustom: z.boolean().default(false),
+  defaultRestSeconds: z.number().int().min(5).max(1800).nullable().optional(),
   archivedAt: iso.nullable().default(null),
   ...stamps,
 })
@@ -132,6 +133,10 @@ export const settingsSchema = z
     lastDayTypeId: nullableId,
     includeWarmupsInStats: z.boolean(),
     backupReminderDays: z.number().int().min(1).max(365).nullable(),
+    restAutoStart: z.boolean(),
+    restDefaultSeconds: z.number().int().min(5).max(1800),
+    restVibrate: z.boolean(),
+    restSound: z.boolean(),
   })
   .partial()
 

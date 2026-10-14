@@ -16,6 +16,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   dayTypesSeeded: false,
   lastExportAt: null,
   backupReminderDays: 14,
+  restAutoStart: true,
+  restDefaultSeconds: 90,
+  restVibrate: true,
+  restSound: false,
 }
 
 export async function getSettings(): Promise<AppSettings> {

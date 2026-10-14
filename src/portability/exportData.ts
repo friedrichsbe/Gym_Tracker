@@ -40,6 +40,10 @@ export async function buildExport(): Promise<ExportFile> {
       lastDayTypeId: settings.lastDayTypeId,
       includeWarmupsInStats: settings.includeWarmupsInStats,
       backupReminderDays: settings.backupReminderDays,
+      restAutoStart: settings.restAutoStart,
+      restDefaultSeconds: settings.restDefaultSeconds,
+      restVibrate: settings.restVibrate,
+      restSound: settings.restSound,
     },
     locations,
     exercises,
@@ -104,7 +108,7 @@ workout_exercises.csv  exercise instances within a workout: id, session_id, posi
                        planned_name, performed_name, status (planned|active|completed|skipped|substituted),
                        is_foreign (true = added although outside the workout's day type),
                        superset_group_id (exercises with the same id were done as a superset: alternating sets, no rest between), substitution_reason, notes
-exercises.csv          catalogue: id, name, aliases (separated by "|"), equipment_type, movement_pattern, muscle_tags ("|"), is_custom, archived_at
+exercises.csv          catalogue: id, name, aliases (separated by "|"), equipment_type, movement_pattern, muscle_tags ("|"), is_custom, default_rest_seconds (rest timer, empty = global default), archived_at
 locations.csv          id, name, notes, address, archived_at
 day_types.csv          id, name, muscle_tags ("|"), exercise_ids ("|"), match_all, position, archived_at
 routines.csv           id, name, day_type_id, notes, archived_at
@@ -232,7 +236,17 @@ export async function exportCsvZip(): Promise<{ blob: Blob; filename: string }> 
       ]),
     ),
     'exercises.csv': rows(
-      ['id', 'name', 'aliases', 'equipment_type', 'movement_pattern', 'muscle_tags', 'is_custom', 'archived_at'],
+      [
+        'id',
+        'name',
+        'aliases',
+        'equipment_type',
+        'movement_pattern',
+        'muscle_tags',
+        'is_custom',
+        'default_rest_seconds',
+        'archived_at',
+      ],
       d.exercises.map((e) => [
         e.id,
         e.name,
@@ -241,6 +255,7 @@ export async function exportCsvZip(): Promise<{ blob: Blob; filename: string }> 
         e.movementPattern,
         e.muscleTags.join('|'),
         e.isCustom,
+        e.defaultRestSeconds,
         e.archivedAt,
       ]),
     ),

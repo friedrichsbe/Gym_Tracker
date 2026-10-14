@@ -47,6 +47,8 @@ export interface Exercise extends Timestamps {
   movementPattern?: string
   muscleTags: string[]
   isCustom: boolean
+  /** Rest after a set of this exercise in seconds; null/undefined = use the global default. */
+  defaultRestSeconds?: number | null
   archivedAt: IsoTimestamp | null
 }
 
@@ -174,6 +176,11 @@ export interface AppSettings {
   lastExportAt: IsoTimestamp | null
   /** Remind about a backup after this many days; null = never. */
   backupReminderDays: number | null
+  /** Start the rest timer automatically after each completed set. */
+  restAutoStart: boolean
+  restDefaultSeconds: number
+  restVibrate: boolean
+  restSound: boolean
 }
 
 export interface SchemaMetadata {

@@ -126,6 +126,50 @@ Numbering continues the original PRD (F1–F16). Status: ✅ built · 🟡 partl
 - **Dropped from scope:** importing the old Obsidian/Markdown table (F14). It was a transition solution; the user
   decided it is not needed. CSV *import* is also not planned (JSON is the restore path).
 
+### F26 — Correct and back-fill workouts ✅
+- A finished workout can be fully corrected in *History → workout*: **date and start time** (the whole workout moves, set
+  timestamps with it), **duration**, **gym** and **day** (applied to every set / re-checks "outside the day"), set **type**
+  (warm-up, drop, failure …), **load kind**, weight and reps, **delete / add sets** (delete has undo), **add exercises**,
+  **change an exercise** ("I picked the wrong one") and **remove an exercise** (with confirmation).
+- **Log a past workout** (*History → "Log past workout"*): enter when/where/how long, then add exercises and sets. New sets
+  start **empty** — the app never invents numbers; empty sets are highlighted.
+- Rules: a workout cannot start in the future; duration 1 min – 24 h; only finished workouts are edited here (the running
+  workout has its own screen).
+
+### F27 — Exercise management ✅
+- *Settings → Exercises → Manage exercises*: search, active/archived, **create, rename, other names (aliases), equipment,
+  muscle groups** (decide which training days it fits), **rest time**, **archive / restore**, usage per exercise
+  ("408 sets in 95 workouts").
+- **Merge duplicates:** pick the exercise to keep; preview shows how many workout entries, presets and day assignments move;
+  the duplicate's name becomes an alias and it is archived. Past workouts and statistics then form one series. Merging is
+  all-or-nothing.
+- Rules: renaming never rewrites history (workouts keep their name snapshot); a *changed* name may not clash with another
+  active exercise, but already-existing duplicates stay editable until merged; exercises are never hard-deleted.
+
+**Names in both languages (standard exercises).** Every standard exercise has an English display name and **always**
+carries its German name(s) plus other common English names as aliases, so it is found whichever way it is typed
+(umlauts optional, small typos tolerated). A test enforces this for the whole starter list. Older installs are brought up
+to date at app start (`refreshStarterAliases`): purely additive, the user's own aliases are kept, nothing is removed, and a
+name already used by another active exercise is never taken over. Users can still add any custom aliases.
+
+**Assigning exercises to training days.** Whenever an exercise is created or edited — in the exercise list *and* in the
+picker during a workout — it is classified in one place:
+- **Muscle groups** (work in *every* split, so the assignment stays complete when the user changes split later), and
+- **Training days** (explicit assignment, e.g. "Upper" and "Push"). Days from other splits are listed too (collapsed), so
+  an exercise can be assigned to Push even while the Leg/Upper/Mix split is active. Days the exercise already fits through
+  its muscle groups are shown as such; "Mix"/"Full body" always fit.
+- Creating in the picker pre-selects the current day; without any muscle group or day the exercise only appears under
+  "Other exercises".
+
+### F28 — Rest timer ✅ (F11)
+- Starts automatically after each **working set** (setting; manual start button when auto is off). **No rest after warm-ups.**
+- Per-exercise rest (Exercise editor) overrides the global default (*Settings → Rest timer*, default 1:30).
+- **Superset-aware:** no rest between the members; the timer starts after the **last exercise of each round** and uses the
+  **longest rest** of the group.
+- Shown in the sticky workout bar with −15 s / +15 s / Skip; always dismissible, never blocks logging. Stores the absolute end
+  time, so it stays correct when the phone sleeps or the app is reopened.
+- Optional vibration and sound at the end (only while the app is open — web apps cannot ring in the background).
+
 ### Carried over unchanged from the original PRD (built) ✅
 F1 logging (autosave, recovery of the active workout after reload, undo for deleted sets), F2 locations at set level,
 F4 catalogue + custom exercises (alias search, typo tolerant), F5 substitution (logged sets stay with the exercise
@@ -139,11 +183,12 @@ user-controlled updates.
 | Entity | Added / changed |
 |---|---|
 | `DayType` (new table, schema v2) | `name`, `muscleTags[]`, `exerciseIds[]`, `matchAll`, `position`, `archivedAt` |
+| `Exercise` | `defaultRestSeconds` (optional) |
 | `Routine` | `dayTypeId` (null = any day) |
 | `RoutineExercise` | `supersetGroup` (same key = superset) |
 | `WorkoutSession` | `dayTypeId`, `dayTypeNameSnapshot` |
 | `WorkoutExercise` | `isForeign`, `supersetGroupId` |
-| `AppSettings` | `includeWarmupsInStats`, `lastDayTypeId`, `dayTypesSeeded`, `lastExportAt`, `backupReminderDays` |
+| `AppSettings` | `includeWarmupsInStats`, `lastDayTypeId`, `dayTypesSeeded`, `lastExportAt`, `backupReminderDays`, `restAutoStart`, `restDefaultSeconds`, `restVibrate`, `restSound` |
 
 - Dexie schema **v2** added `dayTypes` and day-type indexes; v1 databases upgrade in place without data loss.
   Fields that are not indexed (`isForeign`, `supersetGroupId`, `supersetGroup`) need no schema bump; absent = `false`/`null`.
@@ -169,19 +214,22 @@ user-controlled updates.
 
 ## 5. Status against the original feature list
 
+> Correction (14 Oct 2026): an earlier version of this table marked F4 and F6 as complete. In fact exercises could not be
+> edited in the UI and past workouts only allowed changing weight and reps. Both are done now (F26, F27).
+
 | ID | Feature | Status |
 |---|---|---|
 | F1 | Local-first workout logging | ✅ |
 | F2 | Locations at set level, scope on mid-workout change | ✅ |
 | F3 | Flexible routines/templates | ✅ (as presets, F20) |
-| F4 | Catalogue & custom exercises | ✅ (no merge tool for duplicates yet) |
+| F4 | Catalogue & custom exercises | ✅ (management, duplicate merge, German + English names, day assignment — F27) |
 | F5 | Exercise substitution | ✅ |
-| F6 | History & session detail | ✅ |
+| F6 | History & session detail | ✅ (full correction and back-filling, F26; no date/exercise filter yet) |
 | F7 | Basic progress analytics | ✅ (F24) |
 | F8 | Export & import | ✅ (F25; JSON import only) |
 | F9 | Offline PWA | ✅ (to verify on device) |
 | F10 | Backup workflow | ✅ |
-| F11 | Rest timer | ⬜ |
+| F11 | Rest timer | ✅ (F28) |
 | F12 | Advanced set metadata (RPE/RIR/tempo) | 🟡 stored/validated in the model, no input UI |
 | F13 | Better analytics (e1RM, weekly volume per muscle, frequency) | ⬜ |
 | F14 | Markdown importer | dropped |
@@ -191,10 +239,8 @@ user-controlled updates.
 ## 6. Backlog / next ideas (not committed)
 
 1. Real-device pass on the Samsung phone (tap sizes of heatmap squares, one-handed logging, airplane mode, install).
-2. Rest timer (per exercise, dismissible, superset-aware: rest after the round, not between members) — F11.
 3. RPE/RIR input behind progressive disclosure — F12.
 4. Estimated 1RM (labelled, formula shown), weekly volume per muscle group, training frequency — F13.
-5. Merge tool for duplicate exercises with preview.
 6. German UI / string table.
 7. Optional machine identifier below location level.
 8. Desktop table view and keyboard shortcuts — F16.
@@ -212,6 +258,11 @@ user-controlled updates.
 23. Calendar shows Day/Week/Month/Year, with one square per set in Week; every cell has a text label.
 24. Export JSON, wipe the app, import it: entity counts and values match; the same file imported twice adds nothing.
 25. Replace-import hands out a backup of the current data before touching it; a broken file changes nothing.
+26. Change the date, gym and day of a finished workout; everything (calendar, statistics, outside-day marks) follows.
+27. Log a past workout from scratch; empty sets stay empty until typed.
+28. Rename an exercise and merge a duplicate: old workouts keep their names until merged; after the merge they form one series.
+29. Rest timer starts after working sets only, per-exercise rest is honoured, and a superset rests once per round.
+30. Closing and reopening the app during a rest shows the correct time left.
 
 ## 8. Glossary
 
