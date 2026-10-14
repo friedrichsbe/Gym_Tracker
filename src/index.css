@@ -2955,3 +2955,85 @@ table.data tbody tr:hover {
   font-size: 0.75rem;
   font-weight: 600;
 }
+
+/* Date filter: a button-like field; the native input is invisible on top so a tap opens the picker. */
+.date-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch);
+  padding: 0 var(--space-3);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  color: var(--faint);
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+.date-field:hover {
+  border-color: var(--muted);
+}
+.date-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.date-field.has-value {
+  color: var(--text);
+}
+.date-field-icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--muted);
+}
+.date-field-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.date-field-text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.date-field input[type='date'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+}
+.date-field input[type='date']::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.date-field-clear {
+  position: relative; /* above the invisible input */
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  margin-right: -6px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.date-field-clear:hover {
+  background: var(--bg-sunken, rgba(127, 127, 127, 0.15));
+  color: var(--text);
+}

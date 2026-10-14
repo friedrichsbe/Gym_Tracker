@@ -5,6 +5,7 @@ import { db } from '../data/db'
 import { useDayTypes, useLocations } from '../data/hooks'
 import { instant } from '../domain/time'
 import { formatDate, formatDurationShort, formatVolume } from '../ui/format'
+import { DateField } from '../ui/DateField'
 import { IconCalendar, IconPlus } from '../ui/icons'
 import { PastWorkoutSheet } from './PastWorkoutSheet'
 import { summarizeSession } from '../workout/workoutService'
@@ -112,14 +113,8 @@ export function HistoryPage() {
             ))}
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="h-from">From</label>
-          <input id="h-from" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="h-to">To</label>
-          <input id="h-to" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
-        </div>
+        <DateField id="h-from" label="From" value={from} max={to || undefined} onChange={setFrom} />
+        <DateField id="h-to" label="To" value={to} min={from || undefined} onChange={setTo} />
       </div>
       {(day !== 'all' || location !== 'all' || exerciseId !== 'all' || from || to) && sessions && (
         <div className="row-between">
