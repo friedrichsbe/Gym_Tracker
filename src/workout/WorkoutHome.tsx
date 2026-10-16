@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { UpdateBanner } from '../app/UpdateBanner'
 import { db } from '../data/db'
@@ -8,7 +8,7 @@ import { instant } from '../domain/time'
 import type { Routine } from '../domain/types'
 import { ExercisePicker } from '../exercises/ExercisePicker'
 import { LocationPicker } from '../locations/LocationPicker'
-import { suggestedLocationId } from '../locations/locationService'
+import { suggestLocation } from '../locations/locationService'
 import { lastUsedByRoutine } from '../routines/routineService'
 import { BackupReminder } from '../settings/BackupReminder'
 import { formatDate, formatDurationShort, formatVolume } from '../ui/format'
@@ -23,13 +23,24 @@ export function WorkoutHome() {
   const { active: days } = useDayTypes()
   const { active: routines } = useRoutines()
   const [locationId, setLocationId] = useState<string | null>(null)
+  const [locationAuto, setLocationAuto] = useState(false)
+  const pickedLocation = useRef(false)
   const [pickedDay, setPickedDay] = useState<string | null | undefined>(undefined) // undefined = not chosen yet
   const [pickingLocation, setPickingLocation] = useState(false)
   const [pickingExercises, setPickingExercises] = useState(false)
   const now = useNow(60_000)
 
   useEffect(() => {
-    void suggestedLocationId().then(setLocationId)
+    let cancelled = false
+    void suggestLocation().then((s) => {
+      // A choice made while detection was still running wins.
+      if (cancelled || pickedLocation.current) return
+      setLocationId(s.id)
+      setLocationAuto(s.auto)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   // Day: explicit choice, else the last one used (if it still exists), else free.
@@ -108,10 +119,11 @@ export function WorkoutHome() {
             type="button"
             className={`chip lg ${location ? '' : 'warn'}`}
             onClick={() => setPickingLocation(true)}
-            aria-label={`Location: ${location?.name ?? 'not set'}. Change`}
+            aria-label={`Location: ${location?.name ?? 'not set'}${location && locationAuto ? ' (detected)' : ''}. Change`}
           >
             <IconPin />
             <span>{location?.name ?? 'Not set — tap to choose'}</span>
+            {location && locationAuto && <span className="small muted">Auto</span>}
           </button>
         </div>
 
@@ -177,7 +189,11 @@ export function WorkoutHome() {
         open={pickingLocation}
         currentId={locationId}
         onClose={() => setPickingLocation(false)}
-        onSelect={(id) => setLocationId(id)}
+        onSelect={(id, _scope, auto) => {
+          pickedLocation.current = true
+          setLocationId(id)
+          setLocationAuto(auto)
+        }}
       />
 
       <ExercisePicker

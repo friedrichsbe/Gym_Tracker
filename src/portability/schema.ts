@@ -18,6 +18,8 @@ export const locationSchema = z.object({
   name: z.string().min(1).max(200),
   notes: text.optional(),
   address: text.optional(),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
   archivedAt: iso.nullable().default(null),
   ...stamps,
 })
@@ -157,6 +159,7 @@ export const settingsSchema = z
     restVibrate: z.boolean(),
     restSound: z.boolean(),
     autoAddNextSet: z.boolean(),
+    autoLocation: z.boolean(),
     swipeHistoryLeft: historySwipe,
     swipeHistoryRight: historySwipe,
     swipePresetLeft: presetSwipe,

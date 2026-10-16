@@ -64,6 +64,9 @@ export interface Location extends Timestamps {
   name: string
   notes?: string
   address?: string
+  /** Approximate position, used only on this device to detect the gym automatically. */
+  lat?: number
+  lng?: number
   archivedAt: IsoTimestamp | null
 }
 
@@ -215,6 +218,8 @@ export interface AppSettings {
   restSound: boolean
   /** Completing the last set of an exercise adds a pre-filled next set. */
   autoAddNextSet: boolean
+  /** Pre-select the nearest location (with saved coordinates) from the device position. Opt-in. */
+  autoLocation: boolean
   /** Swipe gestures on phones: "left" = finger moves to the left. */
   swipeHistoryLeft: HistorySwipeAction
   swipeHistoryRight: HistorySwipeAction

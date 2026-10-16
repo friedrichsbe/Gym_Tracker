@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useLocations } from '../data/hooks'
+import { useLocations, useSettings } from '../data/hooks'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
-import { createLocation } from './locationService'
+import { createLocation, detectLocationId } from './locationService'
 
 export type LocationScope = 'fromNow' | 'session'
 
@@ -10,7 +10,8 @@ interface Props {
   open: boolean
   currentId: string | null
   onClose: () => void
-  onSelect: (locationId: string | null, scope: LocationScope) => void
+  /** `auto` = chosen via the "Auto" entry from the device position. */
+  onSelect: (locationId: string | null, scope: LocationScope, auto: boolean) => void
   /** Offer the "from now on" vs "whole workout" choice (only mid-session). */
   askScope?: boolean
   hasLoggedSets?: boolean
@@ -18,14 +19,24 @@ interface Props {
 
 export function LocationPicker({ open, currentId, onClose, onSelect, askScope, hasLoggedSets }: Props) {
   const { active } = useLocations()
-  const { guard } = useToast()
+  const settings = useSettings()
+  const { guard, show } = useToast()
+  const [detecting, setDetecting] = useState(false)
   const [scope, setScope] = useState<LocationScope>('fromNow')
   const [name, setName] = useState('')
   const showScope = askScope && hasLoggedSets
 
-  const choose = (id: string | null) => {
-    onSelect(id, showScope ? scope : 'session')
+  const choose = (id: string | null, auto = false) => {
+    onSelect(id, showScope ? scope : 'session', auto)
     onClose()
+  }
+
+  const chooseAuto = async () => {
+    setDetecting(true)
+    const id = await detectLocationId()
+    setDetecting(false)
+    if (id) choose(id, true)
+    else show('No saved location nearby, or location access is off. Pick one manually.')
   }
 
   return (
@@ -51,6 +62,16 @@ export function LocationPicker({ open, currentId, onClose, onSelect, askScope, h
       )}
 
       <ul className="list">
+        {settings.autoLocation && (
+          <li>
+            <button type="button" className="list-btn" disabled={detecting} onClick={() => void chooseAuto()}>
+              <span>
+                <span className="list-title">{detecting ? 'Detecting…' : 'Auto'}</span>
+                <span className="list-sub">Nearest saved location from your position</span>
+              </span>
+            </button>
+          </li>
+        )}
         {active.map((l) => (
           <li key={l.id}>
             <button type="button" className="list-btn" aria-pressed={l.id === currentId} onClick={() => choose(l.id)}>

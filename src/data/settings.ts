@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   restVibrate: true,
   restSound: false,
   autoAddNextSet: false,
+  autoLocation: false,
   swipeHistoryLeft: 'delete',
   swipeHistoryRight: 'repeat',
   swipePresetLeft: 'archive',
