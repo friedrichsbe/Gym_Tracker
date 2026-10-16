@@ -89,7 +89,10 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
         <h1>{session.dayTypeNameSnapshot ? `${session.dayTypeNameSnapshot} day` : 'Free workout'}</h1>
       </div>
 
+      <PartDivider label="Cardio before" />
       <CardioSection sessionId={session.id} slot="start" entries={cardio} canAdd={!logged} />
+
+      <PartDivider label="Strength" />
 
       {exercises.length === 0 && (
         <div className="empty card">
@@ -135,6 +138,7 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
         Add exercise
       </button>
 
+      <PartDivider label="Cardio after" />
       <CardioSection sessionId={session.id} slot="end" entries={cardio} />
 
       <ExercisePicker
@@ -305,4 +309,13 @@ function nextInSuperset(
   const pending = target.sets.filter((s) => !s.isCompleted).length
   if (pending === 0 && done(target) === 0) return undefined
   return `${target.we.performedNameSnapshot} · set ${done(target) + 1}`
+}
+
+/** Thin labelled rule between the parts of a workout: cardio before, strength, cardio after. */
+function PartDivider({ label }: { label: string }) {
+  return (
+    <div className="part-divider" role="separator" aria-label={label}>
+      <span>{label}</span>
+    </div>
+  )
 }

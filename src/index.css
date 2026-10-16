@@ -3669,3 +3669,93 @@ details > .preset-grid {
 .card.danger-zone h2 {
   color: var(--danger);
 }
+
+/* ==========================================================================
+   Active workout: part dividers and a denser layout (.content.live)
+   ========================================================================== */
+
+.part-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.part-divider::before,
+.part-divider::after {
+  content: '';
+  height: 1px;
+  background: var(--border-strong);
+}
+.part-divider::before {
+  width: var(--space-3);
+}
+.part-divider::after {
+  flex: 1;
+}
+
+.content.live {
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+}
+.content.live .page-title h1 {
+  font-size: var(--text-xl);
+}
+.content.live .card {
+  padding: var(--space-3) var(--space-4);
+}
+.content.live .exercise {
+  gap: var(--space-2);
+}
+.content.live .exercise-name {
+  font-size: var(--text-md);
+}
+.content.live .exercise-head .btn.icon {
+  margin: -10px -12px -6px 0;
+}
+.content.live .set-grid {
+  gap: 6px;
+  grid-template-columns: 34px 1fr 1fr 44px;
+}
+.content.live .set-badge,
+.content.live input.num-input,
+.content.live .complete-btn {
+  height: 42px;
+}
+.content.live .complete-btn {
+  width: 44px;
+}
+.content.live input.num-input {
+  font-size: 18px;
+}
+.content.live .exercise .btn.small {
+  min-height: 32px;
+}
+.content.live .superset {
+  padding: var(--space-2);
+  gap: var(--space-2);
+}
+.content.live .btn.big {
+  min-height: 46px;
+}
+.content.live .cardio.done {
+  padding: var(--space-2) var(--space-4);
+}
+@media (min-width: 900px) {
+  .content.live {
+    padding-top: var(--space-6);
+  }
+}
+/* The sticky bar bleeds into the (now smaller) top padding. */
+.content.live .workout-bar {
+  margin-top: calc(var(--space-4) * -1);
+}
+@media (min-width: 900px) {
+  .content.live .workout-bar {
+    margin-top: calc(var(--space-6) * -1);
+  }
+}
