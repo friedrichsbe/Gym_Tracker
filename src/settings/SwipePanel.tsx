@@ -41,26 +41,22 @@ export function SwipePanel() {
   )
 
   return (
-    <section className="card stack loose" aria-labelledby="swipe-title">
-      <div className="stack tight">
-        <h2 id="swipe-title">Swipe gestures</h2>
-        <p className="card-desc">Swipe a workout or preset sideways on your phone for a quick action.</p>
-      </div>
-      <div className="stack">
-        <span className="section-label">Workouts in history</span>
+    <>
+      <section className="card stack" aria-labelledby="swipe-history">
+        <h2 id="swipe-history">Workouts in history</h2>
         <div className="filter-bar">
           {select('swipeHistoryLeft', '← Swipe left', HISTORY_OPTIONS)}
           {select('swipeHistoryRight', 'Swipe right →', HISTORY_OPTIONS)}
         </div>
-      </div>
-      <div className="stack">
-        <span className="section-label">Presets</span>
+      </section>
+      <section className="card stack" aria-labelledby="swipe-presets">
+        <h2 id="swipe-presets">Presets</h2>
         <div className="filter-bar">
           {select('swipePresetLeft', '← Swipe left', PRESET_OPTIONS)}
           {select('swipePresetRight', 'Swipe right →', PRESET_OPTIONS)}
         </div>
-      </div>
+      </section>
       <p className="hint">Delete still asks before anything is removed.</p>
-    </section>
+    </>
   )
 }

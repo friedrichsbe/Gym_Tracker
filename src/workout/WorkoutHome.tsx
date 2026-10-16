@@ -134,12 +134,7 @@ export function WorkoutHome() {
             <button type="button" className="chip day" aria-pressed={dayId === null} onClick={() => setPickedDay(null)}>
               Free
             </button>
-            <Link
-              to="/settings"
-              state={{ scrollTo: 'days' }}
-              className="chip day ghost"
-              aria-label="Edit your training days and split"
-            >
+            <Link to="/settings/days" className="chip day ghost" aria-label="Edit your training days and split">
               <IconSliders />
               Edit
             </Link>

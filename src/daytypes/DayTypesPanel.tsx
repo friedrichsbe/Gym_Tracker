@@ -24,16 +24,12 @@ export function DayTypesPanel() {
   return (
     <section className="card stack" aria-labelledby="days-title" id="days">
       <div className="card-head">
-        <h2 id="days-title">Training days</h2>
+        <h2 id="days-title">Your days</h2>
         <button type="button" className="btn small" onClick={() => setEditing('new')}>
           <IconPlus />
           Add
         </button>
       </div>
-      <p className="card-desc">
-        The day you pick when starting a workout decides which exercises and presets are suggested. Name them however
-        you split your training (Leg / Upper / Mix, Push / Pull / Legs, …).
-      </p>
       <button type="button" className="btn block" onClick={() => setSplitOpen(true)}>
         Choose a training split…
       </button>

@@ -19,7 +19,7 @@ export function BackupReminder() {
           ? 'No backup yet — your workouts exist only on this device.'
           : `Last backup ${Math.floor(days)} days ago.`}
       </span>
-      <Link to="/settings" state={{ scrollTo: 'backup' }} className="btn small">
+      <Link to="/settings/backup" className="btn small">
         Back up
       </Link>
     </div>
