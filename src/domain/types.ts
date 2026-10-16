@@ -213,6 +213,8 @@ export interface AppSettings {
   restDefaultSeconds: number
   restVibrate: boolean
   restSound: boolean
+  /** Completing the last set of an exercise adds a pre-filled next set. */
+  autoAddNextSet: boolean
   /** Swipe gestures on phones: "left" = finger moves to the left. */
   swipeHistoryLeft: HistorySwipeAction
   swipeHistoryRight: HistorySwipeAction

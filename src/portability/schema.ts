@@ -156,6 +156,7 @@ export const settingsSchema = z
     restDefaultSeconds: z.number().int().min(5).max(1800),
     restVibrate: z.boolean(),
     restSound: z.boolean(),
+    autoAddNextSet: z.boolean(),
     swipeHistoryLeft: historySwipe,
     swipeHistoryRight: historySwipe,
     swipePresetLeft: presetSwipe,

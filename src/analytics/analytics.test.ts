@@ -3,6 +3,7 @@ import { db } from '../data/db'
 import { createCustomExercise } from '../exercises/exerciseService'
 import { createLocation } from '../locations/locationService'
 import {
+  addSet,
   addExercise,
   completeSet,
   finishWorkout,
@@ -54,7 +55,11 @@ async function workout(opts: {
   const s = await startWorkout({ startedAt: opts.startedAt, locationId: opts.location })
   await addExercise({ sessionId: s.id, exerciseId: opts.exerciseId })
   for (const [i, [w, r, type]] of opts.sets.entries()) {
-    let sets = (await loadSessionView(s.id))!.exercises[0].sets
+    let { we, sets } = (await loadSessionView(s.id))!.exercises[0]
+    if (!sets[i]) {
+      await addSet(we.id) // "Add set"
+      sets = (await loadSessionView(s.id))!.exercises[0].sets
+    }
     if (type) await updateSet(sets[i].id, { setType: type })
     sets = (await loadSessionView(s.id))!.exercises[0].sets
     await completeSet(sets[i].id, { weightValue: w, reps: r })

@@ -808,10 +808,12 @@ export async function completeSet(setId: string, values: SetPatch = {}): Promise
     await db.sets.put(merged)
     await db.workoutExercises.update(set.workoutExerciseId, { status: 'active' })
 
+    // Optional (Settings → Workout): finishing the last set adds a pre-filled next one. Off by default —
+    // "Add set" does the same on purpose, and an exercise you are done with shouldn't leave an empty row behind.
+    const settings = await getSettings()
     const siblings = await db.sets.where('workoutExerciseId').equals(set.workoutExerciseId).toArray()
     const isLast = !siblings.some((s) => s.setNumber > set.setNumber)
-    if (isLast) {
-      const settings = await getSettings()
+    if (isLast && settings.autoAddNextSet) {
       await db.sets.add(
         blankSet({
           sessionId: set.sessionId,

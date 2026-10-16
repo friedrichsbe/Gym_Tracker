@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { db } from '../data/db'
+import { updateSettings } from '../data/settings'
 import { createCustomExercise, searchExercises, seedStarterExercises } from '../exercises/exerciseService'
 import { archiveLocation, createLocation, updateLocation } from '../locations/locationService'
 import { newId, nowIso } from '../domain/time'
@@ -85,6 +86,7 @@ describe('session lifecycle', () => {
     await addExercise({ sessionId: s.id, exerciseId: a.id })
     let sets = (await setsOf(s.id))[0].sets
     await completeSet(sets[0].id, { weightValue: 60, reps: 10 })
+    await addSet((await setsOf(s.id))[0].we.id)
     sets = (await setsOf(s.id))[0].sets
     await completeSet(sets[1].id, { weightValue: 0, reps: 10 }) // zero is a real value
     const summary = await finishWorkout({ sessionId: s.id })
@@ -100,7 +102,7 @@ describe('session lifecycle', () => {
 })
 
 describe('sets', () => {
-  it('prepares the next set after the last one is completed and ignores duplicate taps', async () => {
+  it('adds no extra row after the last set by default and ignores duplicate taps', async () => {
     const a = await ex('A')
     const s = await startWorkout({})
     await addExercise({ sessionId: s.id, exerciseId: a.id })
@@ -108,8 +110,18 @@ describe('sets', () => {
     await completeSet(id, { weightValue: 40, reps: 12 })
     await completeSet(id, { weightValue: 999, reps: 1 }) // double tap must not change anything
     const sets = (await setsOf(s.id))[0].sets
-    expect(sets).toHaveLength(2)
+    expect(sets).toHaveLength(1)
     expect(sets[0]).toMatchObject({ weightValue: 40, reps: 12, isCompleted: true })
+  })
+
+  it('prepares a pre-filled next set when "Add the next set automatically" is on', async () => {
+    await updateSettings({ autoAddNextSet: true })
+    const a = await ex('A')
+    const s = await startWorkout({})
+    await addExercise({ sessionId: s.id, exerciseId: a.id })
+    await completeSet((await setsOf(s.id))[0].sets[0].id, { weightValue: 40, reps: 12 })
+    const sets = (await setsOf(s.id))[0].sets
+    expect(sets).toHaveLength(2)
     expect(sets[1]).toMatchObject({ weightValue: 40, reps: 12, isCompleted: false })
   })
 
@@ -159,6 +171,7 @@ describe('location context', () => {
     const s = await startWorkout({ locationId: a.id })
     await addExercise({ sessionId: s.id, exerciseId: e.id })
     await completeSet((await setsOf(s.id))[0].sets[0].id, { weightValue: 50, reps: 10 })
+    await addSet((await setsOf(s.id))[0].we.id) // a pending set
 
     await changeSessionLocation({ sessionId: s.id, locationId: b.id, scope: 'fromNow' })
     const sets = (await setsOf(s.id))[0].sets

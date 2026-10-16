@@ -41,6 +41,20 @@ export function WorkoutPanel() {
           </select>
           <span className="hint">Pre-selected when you start a workout. Manage places under Locations.</span>
         </div>
+        <div className="field">
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={settings.autoAddNextSet}
+              onChange={(e) => void guard(() => updateSettings({ autoAddNextSet: e.target.checked }))}
+            />
+            <span>Add the next set automatically</span>
+          </label>
+          <span className="hint">
+            When you tick off the last set of an exercise, a new one with the same weight and reps appears below.
+            Otherwise use “Add set”.
+          </span>
+        </div>
       </section>
 
       <RestTimerPanel />

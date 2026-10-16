@@ -4,7 +4,15 @@ import { updateSettings } from '../data/settings'
 import { createCustomExercise, updateExercise } from '../exercises/exerciseService'
 import { getRestSuggestion } from './restService'
 import { adjustRest, formatClock, remainingSeconds, resetRestTimerForTests, startRest, stopRest } from './restTimer'
-import { addExercise, completeSet, linkSuperset, loadSessionView, startWorkout, updateSet } from './workoutService'
+import {
+  addExercise,
+  addSet,
+  completeSet,
+  linkSuperset,
+  loadSessionView,
+  startWorkout,
+  updateSet,
+} from './workoutService'
 
 const ex = async (name: string) => (await createCustomExercise({ name })).exercise
 
@@ -28,6 +36,7 @@ describe('rest suggestions', () => {
     await completeSet(a.id, { weightValue: 20, reps: 10 })
     expect(await getRestSuggestion(a.id)).toBeNull()
 
+    await addSet((await t.view())[0].we.id)
     const a2 = (await t.view())[0].sets[1]
     await completeSet(a2.id, { weightValue: 60, reps: 8 })
     expect(await getRestSuggestion(a2.id)).toEqual({ seconds: 120, label: 'A' })
@@ -58,6 +67,7 @@ describe('rest suggestions', () => {
     await completeSet(b1.id, { weightValue: 30, reps: 10 })
     expect(await getRestSuggestion(b1.id)).toEqual({ seconds: 100, label: 'A + B' })
     // Round 2 starts with A again: still no rest.
+    await addSet((await t.view())[0].we.id)
     const a2 = (await t.view())[0].sets[1]
     await completeSet(a2.id, { weightValue: 20, reps: 10 })
     expect(await getRestSuggestion(a2.id)).toBeNull()

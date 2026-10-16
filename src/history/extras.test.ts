@@ -10,12 +10,13 @@ import {
   updateRoutineFromSession,
 } from '../routines/routineService'
 import { effortLabel } from '../workout/effort'
-import { completeSet, finishWorkout, loadSessionView, startWorkout, updateSet } from '../workout/workoutService'
+import { addSet, completeSet, finishWorkout, loadSessionView, startWorkout, updateSet } from '../workout/workoutService'
 
 async function done(at: string, ids: string[], sets = 3) {
   const s = await startWorkout({ startedAt: at, exerciseIds: ids })
   for (const e of (await loadSessionView(s.id))!.exercises) {
     for (let i = 0; i < sets; i++) {
+      if (i > 0) await addSet(e.we.id) // "Add set"
       const cur = (await loadSessionView(s.id))!.exercises.find((x) => x.we.id === e.we.id)!.sets[i]
       await completeSet(cur.id, { weightValue: 40 + i, reps: 10 - i })
     }

@@ -56,6 +56,7 @@ export async function buildExport(): Promise<ExportFile> {
       restDefaultSeconds: settings.restDefaultSeconds,
       restVibrate: settings.restVibrate,
       restSound: settings.restSound,
+      autoAddNextSet: settings.autoAddNextSet,
       swipeHistoryLeft: settings.swipeHistoryLeft,
       swipeHistoryRight: settings.swipeHistoryRight,
       swipePresetLeft: settings.swipePresetLeft,
