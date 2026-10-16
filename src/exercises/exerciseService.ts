@@ -1,6 +1,7 @@
 import { db } from '../data/db'
 import { newId, nowIso } from '../domain/time'
 import type { EquipmentType, Exercise } from '../domain/types'
+import { normalizeGroupIds } from '../workout/supersets'
 import { STARTER_EXERCISES, starterAliases } from './seed'
 
 /** Lowercase, strip diacritics (ä→a), collapse whitespace/punctuation. */
@@ -327,6 +328,89 @@ export async function mergeExercises(sourceId: string, targetId: string): Promis
       updatedAt: now,
     })
     await db.exercises.update(sourceId, { archivedAt: now, updatedAt: now })
+    return impact
+  })
+}
+
+export interface DeleteImpact {
+  /** Workouts in which the exercise was done. */
+  workouts: number
+  /** Logged sets (completed or not) that would be removed with it. */
+  sets: number
+  /** Workout entries where it was only planned (a substitute was done) — those just lose the link. */
+  plannedOnly: number
+  presets: number
+  days: number
+}
+
+export async function previewDelete(id: string): Promise<DeleteImpact> {
+  const performed = await db.workoutExercises.where('performedExerciseId').equals(id).toArray()
+  const ids = new Set(performed.map((i) => i.id))
+  return {
+    workouts: new Set(performed.map((i) => i.sessionId)).size,
+    sets: (await db.sets.toArray()).filter((st) => ids.has(st.workoutExerciseId)).length,
+    plannedOnly: await db.workoutExercises
+      .filter((i) => i.plannedExerciseId === id && i.performedExerciseId !== id)
+      .count(),
+    presets: new Set((await db.routineExercises.filter((r) => r.exerciseId === id).toArray()).map((r) => r.routineId))
+      .size,
+    days: (await db.dayTypes.toArray()).filter((d) => d.exerciseIds.includes(id)).length,
+  }
+}
+
+/**
+ * Removes an archived exercise for good: from presets and training days, and — if it was ever done —
+ * its workout entries and their sets. Workouts where it was only planned keep the name snapshot.
+ * Supersets left with a single member are dissolved. Only archived exercises can be deleted.
+ */
+export async function deleteExercisePermanently(id: string): Promise<DeleteImpact> {
+  const tables = [db.exercises, db.workoutExercises, db.sets, db.routineExercises, db.dayTypes]
+  return db.transaction('rw', tables, async () => {
+    const exercise = await db.exercises.get(id)
+    if (!exercise) throw new Error('Exercise not found')
+    if (!exercise.archivedAt) throw new Error('Archive the exercise before deleting it')
+    const impact = await previewDelete(id)
+    const now = nowIso()
+
+    const performed = await db.workoutExercises.where('performedExerciseId').equals(id).toArray()
+    const instanceIds = new Set(performed.map((i) => i.id))
+    await db.sets.bulkDelete(
+      (await db.sets.toArray()).filter((st) => instanceIds.has(st.workoutExerciseId)).map((st) => st.id),
+    )
+    await db.workoutExercises.bulkDelete([...instanceIds])
+    const plannedOnly = await db.workoutExercises.filter((i) => i.plannedExerciseId === id).toArray()
+    await db.workoutExercises.bulkPut(plannedOnly.map((i) => ({ ...i, plannedExerciseId: null })))
+    // Re-check supersets in the workouts that lost an entry.
+    for (const sessionId of new Set(performed.map((i) => i.sessionId))) {
+      const rest = (await db.workoutExercises.where('sessionId').equals(sessionId).toArray()).sort(
+        (a, b) => a.position - b.position,
+      )
+      const groups = normalizeGroupIds(
+        rest.map((i) => i.supersetGroupId),
+        () => newId(),
+      )
+      const changed = rest.filter((i, k) => (i.supersetGroupId ?? null) !== groups[k])
+      await db.workoutExercises.bulkPut(changed.map((i) => ({ ...i, supersetGroupId: groups[rest.indexOf(i)] })))
+    }
+
+    const items = await db.routineExercises.filter((r) => r.exerciseId === id).toArray()
+    await db.routineExercises.bulkDelete(items.map((r) => r.id))
+    for (const routineId of new Set(items.map((r) => r.routineId))) {
+      const rest = (await db.routineExercises.where('routineId').equals(routineId).toArray()).sort(
+        (a, b) => a.position - b.position,
+      )
+      const groups = normalizeGroupIds(
+        rest.map((r) => r.supersetGroup),
+        () => newId(),
+      )
+      await db.routineExercises.bulkPut(rest.map((r, k) => ({ ...r, position: k, supersetGroup: groups[k] })))
+    }
+
+    for (const d of await db.dayTypes.toArray()) {
+      if (!d.exerciseIds.includes(id)) continue
+      await db.dayTypes.update(d.id, { exerciseIds: d.exerciseIds.filter((x) => x !== id), updatedAt: now })
+    }
+    await db.exercises.delete(id)
     return impact
   })
 }

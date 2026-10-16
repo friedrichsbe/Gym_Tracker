@@ -5,12 +5,14 @@ import { fitsDay, setExerciseDays } from '../daytypes/dayTypeService'
 import { ExerciseClassification } from './ExerciseClassification'
 import { useDayTypes, useExercises, useSettings } from '../data/hooks'
 import type { EquipmentType, Exercise } from '../domain/types'
-import { IconChevronLeft, IconChevronRight, IconPlus, IconStar } from '../ui/icons'
+import { IconChevronLeft, IconChevronRight, IconPlus, IconStar, IconTrash } from '../ui/icons'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
 import {
   archiveExercise,
   createCustomExercise,
+  deleteExercisePermanently,
+  previewDelete,
   setFavorite,
   exerciseUsage,
   mergeExercises,
@@ -18,6 +20,7 @@ import {
   searchExercises,
   unarchiveExercise,
   updateExercise,
+  type DeleteImpact,
   type MergeImpact,
 } from './exerciseService'
 
@@ -79,8 +82,8 @@ export function ExercisesPage() {
         </button>
       </div>
       <p className="page-intro">
-        Rename, tag and tidy your exercise list. Past workouts keep working: nothing here rewrites history, and
-        exercises are archived, never deleted.
+        Rename, tag and tidy your exercise list. Past workouts keep working: nothing here rewrites history. Archived
+        exercises can be deleted for good.
       </p>
 
       <div className="field">
@@ -236,6 +239,7 @@ function ExerciseForm({
   const [muscles, setMuscles] = useState<string[]>(existing?.muscleTags ?? [])
   const [rest, setRest] = useState(existing?.defaultRestSeconds ? String(existing.defaultRestSeconds) : '')
   const [merging, setMerging] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   // Day assignment: shown from the stored data until the user changes it, so nothing is overwritten unintentionally.
   const { active: activeDays, archived: archivedDays } = useDayTypes()
   const storedDayIds = existing
@@ -379,7 +383,7 @@ function ExerciseForm({
               Merge into another exercise…
             </button>
           )}
-          {existing.archivedAt ? (
+          {existing.archivedAt && (
             <button
               type="button"
               className="btn block"
@@ -391,6 +395,12 @@ function ExerciseForm({
               }
             >
               Restore exercise
+            </button>
+          )}
+          {existing.archivedAt ? (
+            <button type="button" className="btn ghost danger-text block" onClick={() => setDeleting(true)}>
+              <IconTrash />
+              Delete permanently…
             </button>
           ) : (
             <button
@@ -411,9 +421,24 @@ function ExerciseForm({
             </button>
           )}
           <p className="hint">
-            Merging is for duplicates. Archiving hides it from pickers; workouts and statistics stay intact.
+            {existing.archivedAt
+              ? 'Restoring brings it back to the pickers. Deleting removes it for good.'
+              : 'Merging is for duplicates. Archiving hides it from pickers; workouts and statistics stay intact.'}
           </p>
         </section>
+      )}
+
+      {existing && (
+        <Sheet open={deleting} title={`Delete “${existing.name}”?`} onClose={() => setDeleting(false)}>
+          <DeleteBody
+            exercise={existing}
+            onCancel={() => setDeleting(false)}
+            onDeleted={() => {
+              setDeleting(false)
+              onDone()
+            }}
+          />
+        </Sheet>
       )}
 
       {existing && (
@@ -541,6 +566,78 @@ function MergeBody({
         ))}
       </ul>
       {results.length === 0 && <p className="hint">No match.</p>}
+    </div>
+  )
+}
+
+/** Confirmation for deleting an archived exercise: a simple warning if it was never trained, a stronger one if it was. */
+function DeleteBody({
+  exercise,
+  onCancel,
+  onDeleted,
+}: {
+  exercise: Exercise
+  onCancel: () => void
+  onDeleted: () => void
+}) {
+  const { guard, show } = useToast()
+  const impact = useLiveQuery<DeleteImpact | undefined>(() => previewDelete(exercise.id), [exercise.id])
+  const [understood, setUnderstood] = useState(false)
+  if (!impact) return <div className="skeleton block" />
+  const trained = impact.workouts > 0
+  const alsoFrom = [
+    impact.presets > 0 && `${impact.presets} ${impact.presets === 1 ? 'preset' : 'presets'}`,
+    impact.days > 0 && `${impact.days} training ${impact.days === 1 ? 'day' : 'days'}`,
+  ].filter(Boolean)
+
+  return (
+    <div className="stack">
+      {trained ? (
+        <div className="banner error stack">
+          <strong>
+            Used in {impact.workouts} {impact.workouts === 1 ? 'workout' : 'workouts'} ({impact.sets}{' '}
+            {impact.sets === 1 ? 'set' : 'sets'})
+          </strong>
+          <p>
+            Deleting removes these sets from your history, statistics and records. The rest of those workouts stays.
+            This can’t be undone.
+          </p>
+        </div>
+      ) : (
+        <p>It was never used in a workout, so no history is affected. This can’t be undone.</p>
+      )}
+      {alsoFrom.length > 0 && <p className="secondary small">It will also be removed from {alsoFrom.join(' and ')}.</p>}
+      {trained && (
+        <>
+          <p className="hint">
+            Want to keep those sets under another exercise instead? Restore it and use “Merge into another exercise”.
+          </p>
+          <label className="check-row">
+            <input type="checkbox" checked={understood} onChange={(e) => setUnderstood(e.target.checked)} />
+            <span>
+              Delete the exercise and its {impact.sets} logged {impact.sets === 1 ? 'set' : 'sets'}
+            </span>
+          </label>
+        </>
+      )}
+      <button
+        type="button"
+        className="btn danger solid block"
+        disabled={trained && !understood}
+        onClick={() =>
+          void guard(async () => {
+            await deleteExercisePermanently(exercise.id)
+            show(`“${exercise.name}” deleted`)
+            onDeleted()
+          })
+        }
+      >
+        <IconTrash />
+        Delete permanently
+      </button>
+      <button type="button" className="btn block" onClick={onCancel}>
+        Cancel
+      </button>
     </div>
   )
 }
