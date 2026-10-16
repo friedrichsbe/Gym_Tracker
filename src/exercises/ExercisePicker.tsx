@@ -6,7 +6,7 @@ import type { DayType, EquipmentType, Exercise } from '../domain/types'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
 import { createCustomExercise, normalize, searchExercises, setFavorite } from './exerciseService'
-import { IconStar } from '../ui/icons'
+import { IconPlus, IconStar } from '../ui/icons'
 import { LangToggle } from '../ui/LangToggle'
 import { useNameLang } from '../ui/lang'
 import { germanNameFor } from './seed'
@@ -46,7 +46,7 @@ export function ExercisePicker({
 }: Props) {
   const all = useExercises()
   const recentIds = useRecentExerciseIds()
-  const { guard } = useToast()
+  const { guard, show } = useToast()
   const [query, setQuery] = useState('')
   const [reason, setReason] = useState<string | undefined>()
   const [equipment, setEquipment] = useState<EquipmentType>('machine')
@@ -58,6 +58,11 @@ export function ExercisePicker({
   const [onlyFavorites, setOnlyFavorites] = useState(false)
   const lang = useNameLang()
   const searchRef = useRef<HTMLInputElement>(null)
+  // "New exercise" form: opened by the button below the list, or offered when a search finds nothing.
+  const [creating, setCreating] = useState(false)
+  const [newName, setNewName] = useState<string | null>(null)
+  const createRef = useRef<HTMLDivElement>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
 
   const labelOf = useCallback(
     (e: Exercise) => (lang === 'de' ? (germanNameFor(e.name, e.aliases, normalize) ?? e.name) : e.name),
@@ -112,6 +117,17 @@ export function ExercisePicker({
       !e.archivedAt && (e.nameKey === normalize(query) || e.aliases.some((a) => normalize(a) === normalize(query))),
   )
   const chosenDays = belongsTo ?? (specificDay ? [specificDay.id] : [])
+  const name = newName ?? query.trim()
+  const showCreate = creating || (!!query.trim() && !exactMatch)
+  const openCreate = () => {
+    setCreating(true)
+    setNewName(query.trim())
+    // After the form has rendered: bring it into view and put the cursor in the name field.
+    window.setTimeout(() => {
+      createRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      nameRef.current?.focus({ preventScroll: true })
+    }, 0)
+  }
 
   const reset = () => {
     setQuery('')
@@ -119,6 +135,8 @@ export function ExercisePicker({
     setSelected([])
     setBelongsTo(null)
     setNewMuscles([])
+    setCreating(false)
+    setNewName(null)
   }
   const close = () => {
     reset()
@@ -212,7 +230,10 @@ export function ExercisePicker({
             ref={searchRef}
             placeholder="Name, alias, muscle or equipment"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              if (!creating) setNewName(null)
+            }}
           />
         </div>
         <LangToggle />
@@ -251,7 +272,7 @@ export function ExercisePicker({
       {suggested.length === 0 && others.length === 0 && (
         <div className="empty">
           <p className="empty-title">No match</p>
-          <p>Try another name, muscle or piece of equipment — or create it below.</p>
+          <p>Try another name or filter — or create it below.</p>
         </div>
       )}
 
@@ -264,9 +285,35 @@ export function ExercisePicker({
         </details>
       )}
 
-      {query.trim() && !exactMatch && (
-        <div className="card stack create-card">
-          <strong>Create “{query.trim()}”</strong>
+      {!showCreate && (
+        <button type="button" className="btn block dashed" onClick={openCreate}>
+          <IconPlus />
+          New exercise
+        </button>
+      )}
+
+      {showCreate && (
+        <div className="card stack create-card" ref={createRef}>
+          <div className="card-head">
+            <strong>{creating ? 'New exercise' : `Not found — create “${query.trim()}”?`}</strong>
+            {creating && (
+              <button type="button" className="btn ghost small" onClick={() => setCreating(false)}>
+                Cancel
+              </button>
+            )}
+          </div>
+          <div className="field">
+            <label htmlFor="new-name">Name</label>
+            <input
+              id="new-name"
+              ref={nameRef}
+              type="text"
+              autoComplete="off"
+              placeholder="e.g. Cable Fly"
+              value={name}
+              onChange={(e) => setNewName(e.target.value)}
+            />
+          </div>
           <div className="field">
             <label htmlFor="new-equipment">Equipment</label>
             <select
@@ -288,17 +335,22 @@ export function ExercisePicker({
           <button
             type="button"
             className="btn primary"
+            disabled={!name.trim()}
             onClick={() =>
               void guard(async () => {
                 const { exercise, created } = await createCustomExercise({
-                  name: query,
+                  name,
                   equipmentType: equipment,
                   muscleTags: newMuscles,
                 })
                 if (created) await setExerciseDays(exercise.id, chosenDays)
+                else show(`“${exercise.name}” already exists — using it`)
                 if (mode === 'multi') {
                   setSelected((xs) => (xs.includes(exercise.id) ? xs : [...xs, exercise.id]))
                   setQuery('')
+                  setCreating(false)
+                  setNewName(null)
+                  setNewMuscles([])
                 } else {
                   onPick?.(exercise, mode === 'replace' ? reason : undefined)
                   close()
@@ -306,6 +358,7 @@ export function ExercisePicker({
               })
             }
           >
+            <IconPlus />
             {mode === 'multi' ? 'Create and select' : 'Create and use'}
           </button>
         </div>
