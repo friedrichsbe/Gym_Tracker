@@ -94,13 +94,14 @@ export function ExercisePicker({
     // Recently used: one list, most-trained first, then most recent — the habits to build on.
     if (onlyRecent) {
       const h = (e: Exercise) => habits?.get(e.id) ?? { count: 0, lastAt: 0 }
+      const byHabit = (a: Exercise, b: Exercise) =>
+        h(b).count - h(a).count || h(b).lastAt - h(a).lastAt || labelOf(a).localeCompare(labelOf(b))
       const pool = query.trim() ? searchExercises(active, query) : active
-      return {
-        suggested: [...pool].sort(
-          (a, b) => h(b).count - h(a).count || h(b).lastAt - h(a).lastAt || labelOf(a).localeCompare(labelOf(b)),
-        ),
-        others: [],
-      }
+      // Like favourites: the day's exercises first; ones from other days stay in the "Other exercises" dropdown,
+      // so a biceps curl done twice beats a leg exercise done five times on an upper day.
+      const fitting = pool.filter((e) => fitsDay(e, day, extraFitIds)).sort(byHabit)
+      const rest = pool.filter((e) => !fitsDay(e, day, extraFitIds)).sort(byHabit)
+      return query.trim() ? { suggested: [...fitting, ...rest], others: [] } : { suggested: fitting, others: rest }
     }
     if (query.trim()) {
       const found = searchExercises(active, query).slice(0, 60)
@@ -301,7 +302,9 @@ export function ExercisePicker({
       </div>
 
       {!query.trim() && onlyRecent && suggested.length > 0 && (
-        <p className="section-label">Trained in the last {HABIT_DAYS} days · most often first</p>
+        <p className="section-label">
+          Trained in the last {HABIT_DAYS} days{specificDay ? ` · ${specificDay.name}` : ''} · most often first
+        </p>
       )}
       {!query.trim() && !onlyRecent && specificDay && <p className="section-label">Suggested for {specificDay.name}</p>}
       {!query.trim() && !onlyRecent && !specificDay && recentIds.length > 0 && (
@@ -309,6 +312,11 @@ export function ExercisePicker({
       )}
 
       <ul className="list">{suggested.map(row)}</ul>
+      {onlyRecent && !query.trim() && suggested.length === 0 && others.length > 0 && (
+        <p className="hint">
+          Nothing for {specificDay?.name ?? 'this day'} in the last {HABIT_DAYS} days — see the other exercises below.
+        </p>
+      )}
       {suggested.length === 0 && others.length === 0 && (
         <div className="empty">
           {onlyRecent && habits?.size === 0 ? (
