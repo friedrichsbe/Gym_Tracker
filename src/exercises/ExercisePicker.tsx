@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fitsDay, setExerciseDays } from '../daytypes/dayTypeService'
 import { ExerciseClassification } from './ExerciseClassification'
-import { useExercises, useRecentExerciseIds } from '../data/hooks'
+import { useExerciseHabits, useExercises, useRecentExerciseIds } from '../data/hooks'
 import type { DayType, EquipmentType, Exercise } from '../domain/types'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
-import { createCustomExercise, normalize, searchExercises, setFavorite } from './exerciseService'
+import { createCustomExercise, normalize, searchExercises, setFavorite, type ExerciseHabit } from './exerciseService'
 import { IconPlus, IconStar } from '../ui/icons'
 import { LangToggle } from '../ui/LangToggle'
 import { useNameLang } from '../ui/lang'
 import { germanNameFor } from './seed'
+
+/** "Recently used" looks this far back. */
+const HABIT_DAYS = 60
 
 const REASONS = ['Occupied', 'Not available', 'Preferred alternative']
 const EQUIPMENT: EquipmentType[] = ['machine', 'dumbbell', 'barbell', 'cable', 'bodyweight', 'other']
@@ -56,6 +59,8 @@ export function ExercisePicker({
   const [filterEquipment, setFilterEquipment] = useState('')
   const [filterMuscle, setFilterMuscle] = useState('')
   const [onlyFavorites, setOnlyFavorites] = useState(false)
+  const [onlyRecent, setOnlyRecent] = useState(false)
+  const habits = useExerciseHabits(HABIT_DAYS)
   const lang = useNameLang()
   const searchRef = useRef<HTMLInputElement>(null)
   // "New exercise" form: opened by the button below the list, or offered when a search finds nothing.
@@ -83,8 +88,20 @@ export function ExercisePicker({
         !e.archivedAt &&
         (!filterEquipment || e.equipmentType === filterEquipment) &&
         (!filterMuscle || e.muscleTags.includes(filterMuscle)) &&
-        (!onlyFavorites || e.favorite),
+        (!onlyFavorites || e.favorite) &&
+        (!onlyRecent || !!habits?.has(e.id)),
     )
+    // Recently used: one list, most-trained first, then most recent — the habits to build on.
+    if (onlyRecent) {
+      const h = (e: Exercise) => habits?.get(e.id) ?? { count: 0, lastAt: 0 }
+      const pool = query.trim() ? searchExercises(active, query) : active
+      return {
+        suggested: [...pool].sort(
+          (a, b) => h(b).count - h(a).count || h(b).lastAt - h(a).lastAt || labelOf(a).localeCompare(labelOf(b)),
+        ),
+        others: [],
+      }
+    }
     if (query.trim()) {
       const found = searchExercises(active, query).slice(0, 60)
       return {
@@ -106,7 +123,19 @@ export function ExercisePicker({
       .filter((e) => !fitsDay(e, day, extraFitIds))
       .sort((a, b) => labelOf(a).localeCompare(labelOf(b)))
     return { suggested: fitting, others: rest }
-  }, [all, query, recentIds, day, extraFitIds, filterEquipment, filterMuscle, onlyFavorites, labelOf])
+  }, [
+    all,
+    query,
+    recentIds,
+    day,
+    extraFitIds,
+    filterEquipment,
+    filterMuscle,
+    onlyFavorites,
+    onlyRecent,
+    habits,
+    labelOf,
+  ])
   const muscleOptions = useMemo(
     () => [...new Set(all.filter((e) => !e.archivedAt).flatMap((e) => e.muscleTags))].sort(),
     [all],
@@ -157,7 +186,10 @@ export function ExercisePicker({
       <>
         <span className="grow">
           <span className="list-title">{labelOf(e)}</span>
-          <span className="list-sub">{e.equipmentType}</span>
+          <span className="list-sub">
+            {e.equipmentType}
+            {onlyRecent && habits?.get(e.id) && <> · {habitText(habits.get(e.id)!)}</>}
+          </span>
         </span>
         {outside && <span className="tag foreign">Outside {specificDay!.name}</span>}
       </>
@@ -263,16 +295,33 @@ export function ExercisePicker({
         <button type="button" className="chip" aria-pressed={onlyFavorites} onClick={() => setOnlyFavorites((v) => !v)}>
           ★ Favorites only
         </button>
+        <button type="button" className="chip" aria-pressed={onlyRecent} onClick={() => setOnlyRecent((v) => !v)}>
+          ↻ Recently used
+        </button>
       </div>
 
-      {!query.trim() && specificDay && <p className="section-label">Suggested for {specificDay.name}</p>}
-      {!query.trim() && !specificDay && recentIds.length > 0 && <p className="section-label">Recent first</p>}
+      {!query.trim() && onlyRecent && suggested.length > 0 && (
+        <p className="section-label">Trained in the last {HABIT_DAYS} days · most often first</p>
+      )}
+      {!query.trim() && !onlyRecent && specificDay && <p className="section-label">Suggested for {specificDay.name}</p>}
+      {!query.trim() && !onlyRecent && !specificDay && recentIds.length > 0 && (
+        <p className="section-label">Recent first</p>
+      )}
 
       <ul className="list">{suggested.map(row)}</ul>
       {suggested.length === 0 && others.length === 0 && (
         <div className="empty">
-          <p className="empty-title">No match</p>
-          <p>Try another name or filter — or create it below.</p>
+          {onlyRecent && habits?.size === 0 ? (
+            <>
+              <p className="empty-title">Nothing trained recently</p>
+              <p>Exercises from your workouts of the last {HABIT_DAYS} days show up here.</p>
+            </>
+          ) : (
+            <>
+              <p className="empty-title">No match</p>
+              <p>Try another name or filter — or create it below.</p>
+            </>
+          )}
         </div>
       )}
 
@@ -383,4 +432,11 @@ export function ExercisePicker({
       )}
     </Sheet>
   )
+}
+
+/** "4× · 3 days ago" */
+function habitText(h: ExerciseHabit): string {
+  const days = Math.floor((Date.now() - h.lastAt) / 86_400_000)
+  const when = days <= 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`
+  return `${h.count}× · ${when}`
 }

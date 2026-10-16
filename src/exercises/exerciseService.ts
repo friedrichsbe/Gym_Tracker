@@ -1,5 +1,5 @@
 import { db } from '../data/db'
-import { newId, nowIso } from '../domain/time'
+import { instant, newId, nowIso } from '../domain/time'
 import type { EquipmentType, Exercise } from '../domain/types'
 import { normalizeGroupIds } from '../workout/supersets'
 import { STARTER_EXERCISES, starterAliases } from './seed'
@@ -444,4 +444,36 @@ export async function refreshStarterAliases(): Promise<number> {
     }
     return changed
   })
+}
+
+export interface ExerciseHabit {
+  /** Workouts in the window in which the exercise was done. */
+  count: number
+  /** Start of the most recent of those workouts (ms). */
+  lastAt: number
+}
+
+/** How often and how recently each exercise was trained in the last `days` days (finished and running workouts). */
+export async function exerciseHabits(days: number, now = Date.now()): Promise<Map<string, ExerciseHabit>> {
+  const since = now - days * 86_400_000
+  const sessions = (await db.sessions.toArray()).filter(
+    (s) => (s.status === 'completed' || s.status === 'active') && instant(s.startedAt) >= since,
+  )
+  const out = new Map<string, ExerciseHabit>()
+  for (const s of sessions) {
+    const at = instant(s.startedAt)
+    const done = new Set(
+      (await db.workoutExercises.where('sessionId').equals(s.id).toArray())
+        .filter((we) => we.status !== 'skipped')
+        .map((we) => we.performedExerciseId),
+    )
+    for (const id of done) {
+      const h = out.get(id)
+      if (h) {
+        h.count++
+        h.lastAt = Math.max(h.lastAt, at)
+      } else out.set(id, { count: 1, lastAt: at })
+    }
+  }
+  return out
 }

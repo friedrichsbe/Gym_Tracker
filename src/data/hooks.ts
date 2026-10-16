@@ -4,6 +4,7 @@ import { db } from './db'
 import { DEFAULT_SETTINGS, getSettings } from './settings'
 import { instant } from '../domain/time'
 import type { AppSettings, DayType, Exercise, Location, Routine } from '../domain/types'
+import { exerciseHabits, type ExerciseHabit } from '../exercises/exerciseService'
 
 /** `undefined` while the first read is in flight. */
 export function useSettingsLoaded(): AppSettings | undefined {
@@ -64,6 +65,11 @@ export function useRecentExerciseIds(limit = 8): string[] {
       return seen.slice(0, limit)
     }, []) ?? []
   )
+}
+
+/** How often and how recently each exercise was trained in the last `days` days (finished and running workouts). */
+export function useExerciseHabits(days = 60): Map<string, ExerciseHabit> | undefined {
+  return useLiveQuery(() => exerciseHabits(days), [days])
 }
 
 export function useNow(intervalMs = 1000): number {
