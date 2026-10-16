@@ -9,6 +9,8 @@ export type LocationScope = 'fromNow' | 'session'
 interface Props {
   open: boolean
   currentId: string | null
+  /** The current location was detected automatically: "Auto" is shown as the active choice. */
+  currentAuto?: boolean
   onClose: () => void
   /** `auto` = chosen via the "Auto" entry from the device position. */
   onSelect: (locationId: string | null, scope: LocationScope, auto: boolean) => void
@@ -17,7 +19,7 @@ interface Props {
   hasLoggedSets?: boolean
 }
 
-export function LocationPicker({ open, currentId, onClose, onSelect, askScope, hasLoggedSets }: Props) {
+export function LocationPicker({ open, currentId, currentAuto, onClose, onSelect, askScope, hasLoggedSets }: Props) {
   const { active } = useLocations()
   const settings = useSettings()
   const { guard, show } = useToast()
@@ -35,8 +37,10 @@ export function LocationPicker({ open, currentId, onClose, onSelect, askScope, h
     setDetecting(true)
     const id = await detectLocationId()
     setDetecting(false)
-    if (id) choose(id, true)
-    else show('No saved location nearby, or location access is off. Pick one manually.')
+    if (id) return choose(id, true)
+    // Close first so the message is not hidden behind the sheet.
+    onClose()
+    show('No saved location nearby, or location access is off. Pick one manually.')
   }
 
   return (
@@ -64,17 +68,32 @@ export function LocationPicker({ open, currentId, onClose, onSelect, askScope, h
       <ul className="list">
         {settings.autoLocation && (
           <li>
-            <button type="button" className="list-btn" disabled={detecting} onClick={() => void chooseAuto()}>
+            <button
+              type="button"
+              className="list-btn"
+              aria-pressed={!!currentAuto}
+              disabled={detecting}
+              onClick={() => void chooseAuto()}
+            >
               <span>
                 <span className="list-title">{detecting ? 'Detecting…' : 'Auto'}</span>
-                <span className="list-sub">Nearest saved location from your position</span>
+                <span className="list-sub">
+                  {currentAuto && active.some((l) => l.id === currentId)
+                    ? `Currently ${active.find((l) => l.id === currentId)?.name} · switches with your position`
+                    : 'Nearest saved location from your position'}
+                </span>
               </span>
             </button>
           </li>
         )}
         {active.map((l) => (
           <li key={l.id}>
-            <button type="button" className="list-btn" aria-pressed={l.id === currentId} onClick={() => choose(l.id)}>
+            <button
+              type="button"
+              className="list-btn"
+              aria-pressed={!currentAuto && l.id === currentId}
+              onClick={() => choose(l.id)}
+            >
               <span>
                 <span className="list-title">{l.name}</span>
                 {l.notes && <span className="list-sub">{l.notes}</span>}
@@ -83,7 +102,12 @@ export function LocationPicker({ open, currentId, onClose, onSelect, askScope, h
           </li>
         ))}
         <li>
-          <button type="button" className="list-btn" aria-pressed={currentId === null} onClick={() => choose(null)}>
+          <button
+            type="button"
+            className="list-btn"
+            aria-pressed={!currentAuto && currentId === null}
+            onClick={() => choose(null)}
+          >
             <span className="list-title muted">Unknown / not set</span>
           </button>
         </li>

@@ -55,6 +55,24 @@ export function LocationsPanel() {
         ))}
       </ul>
       <div className="field">
+        <label htmlFor="default-loc">Default location</label>
+        <select
+          id="default-loc"
+          value={settings.defaultLocationId ?? ''}
+          onChange={(e) => void guard(() => updateSettings({ defaultLocationId: e.target.value || null }))}
+        >
+          <option value="">None</option>
+          {active.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </select>
+        <span className="hint">
+          Pre-selected when you start a workout{settings.autoLocation ? ' and no saved location is nearby' : ''}.
+        </span>
+      </div>
+      <div className="field">
         <label className="check-row">
           <input
             type="checkbox"

@@ -188,6 +188,7 @@ export function WorkoutHome() {
       <LocationPicker
         open={pickingLocation}
         currentId={locationId}
+        currentAuto={locationAuto}
         onClose={() => setPickingLocation(false)}
         onSelect={(id, _scope, auto) => {
           pickedLocation.current = true

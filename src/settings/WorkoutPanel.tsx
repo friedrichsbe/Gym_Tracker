@@ -1,4 +1,4 @@
-import { useLocations, useSettings } from '../data/hooks'
+import { useSettings } from '../data/hooks'
 import { updateSettings } from '../data/settings'
 import type { WeightUnit } from '../domain/types'
 import { useToast } from '../ui/toastContext'
@@ -6,7 +6,6 @@ import { RestTimerPanel } from './RestTimerPanel'
 
 export function WorkoutPanel() {
   const settings = useSettings()
-  const { active } = useLocations()
   const { guard } = useToast()
 
   return (
@@ -24,22 +23,6 @@ export function WorkoutPanel() {
             <option value="lb">lb</option>
           </select>
           <span className="hint">Every set stores its own unit, so changing this never rewrites history.</span>
-        </div>
-        <div className="field">
-          <label htmlFor="default-loc">Default location</label>
-          <select
-            id="default-loc"
-            value={settings.defaultLocationId ?? ''}
-            onChange={(e) => void guard(() => updateSettings({ defaultLocationId: e.target.value || null }))}
-          >
-            <option value="">None</option>
-            {active.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </select>
-          <span className="hint">Pre-selected when you start a workout. Manage places under Locations.</span>
         </div>
         <div className="field">
           <label className="check-row">
