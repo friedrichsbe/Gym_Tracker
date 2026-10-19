@@ -189,6 +189,7 @@ export function ExercisesPage() {
                         u
                           ? `${u.sets} sets in ${u.workouts} ${u.workouts === 1 ? 'workout' : 'workouts'}`
                           : 'never used',
+                        e.unilateral ? 'one side at a time' : '',
                         e.defaultRestSeconds ? `rest ${e.defaultRestSeconds}s` : '',
                       ]
                         .filter(Boolean)
@@ -247,6 +248,7 @@ function ExerciseForm({
     : []
   const [dayIdsEdit, setDayIdsEdit] = useState<string[] | null>(null)
   const [favorite, setFavoriteFlag] = useState(!!existing?.favorite)
+  const [unilateral, setUnilateral] = useState(!!existing?.unilateral)
   const dayIds = dayIdsEdit ?? storedDayIds
   const u = existing ? usage?.get(existing.id) : undefined
 
@@ -269,6 +271,7 @@ function ExerciseForm({
                 equipmentType: equipment,
                 muscleTags: muscles,
                 defaultRestSeconds: restValue,
+                unilateral,
               })
               if (dayIdsEdit) await setExerciseDays(existing.id, dayIdsEdit)
               if (favorite !== !!existing.favorite) await setFavorite(existing.id, favorite)
@@ -279,6 +282,7 @@ function ExerciseForm({
                 equipmentType: equipment,
                 muscleTags: muscles,
                 defaultRestSeconds: restValue,
+                unilateral,
               })
               if (!created) {
                 show(`“${name.trim()}” already exists — nothing was added`)
@@ -342,6 +346,14 @@ function ExerciseForm({
             </select>
           </div>
           <ExerciseClassification muscles={muscles} onMuscles={setMuscles} dayIds={dayIds} onDayIds={setDayIdsEdit} />
+          <label className="check-row">
+            <input type="checkbox" checked={unilateral} onChange={(e) => setUnilateral(e.target.checked)} />
+            <span>One side at a time (left, then right)</span>
+          </label>
+          <span className="hint">
+            Each set gets an L and an R check. Weight and reps are per side; volume counts both sides. Also applies to
+            past workouts.
+          </span>
         </section>
 
         <section className="form-section" aria-label="Rest timer">

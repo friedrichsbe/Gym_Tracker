@@ -1858,6 +1858,19 @@ details > .preset-list {
   gap: var(--space-2);
   align-items: center;
 }
+/* One-sided exercises: an L and an R check per set. */
+.set-grid.sides {
+  grid-template-columns: 40px 1fr 1fr 92px;
+}
+.side-btns,
+.side-heads {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.complete-btn.side {
+  width: 44px;
+}
 .set-grid-head {
   font-size: 11px;
   font-weight: 600;
@@ -1938,13 +1951,15 @@ input.num-input:focus {
 .complete-btn:active {
   transform: scale(0.94);
 }
-.set-row.done .complete-btn {
+.set-row.done .complete-btn,
+.complete-btn.side.on {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .set-row.done .complete-btn svg {
+  .set-row.done .complete-btn svg,
+  .complete-btn.side.on svg {
     animation: pop var(--dur-slow) var(--ease);
   }
 }
@@ -2713,7 +2728,8 @@ table.data tbody tr:hover {
 /* Colour carried into the controls */
 :root[data-theme='glow'] .btn.primary,
 :root[data-theme='glow'] .brand-mark,
-:root[data-theme='glow'] .set-row.done .complete-btn {
+:root[data-theme='glow'] .set-row.done .complete-btn,
+:root[data-theme='glow'] .complete-btn.side.on {
   background: var(--primary-fill);
   border-color: transparent;
   box-shadow:
@@ -3765,6 +3781,12 @@ details > .preset-grid {
 }
 .content.live .complete-btn {
   width: 44px;
+}
+.content.live .set-grid.sides {
+  grid-template-columns: 34px 1fr 1fr 86px;
+}
+.content.live .complete-btn.side {
+  width: 41px;
 }
 .content.live input.num-input {
   font-size: 18px;

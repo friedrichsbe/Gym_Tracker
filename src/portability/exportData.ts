@@ -325,6 +325,7 @@ export async function exportCsvZip(opts: { sessionId?: string } = {}): Promise<{
         'muscle_tags',
         'is_custom',
         'default_rest_seconds',
+        'unilateral',
         'archived_at',
       ],
       d.exercises.map((e) => [
@@ -336,6 +337,7 @@ export async function exportCsvZip(opts: { sessionId?: string } = {}): Promise<{
         e.muscleTags.join('|'),
         e.isCustom,
         e.defaultRestSeconds,
+        !!e.unilateral,
         e.archivedAt,
       ]),
     ),

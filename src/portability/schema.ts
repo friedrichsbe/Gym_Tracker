@@ -35,6 +35,7 @@ export const exerciseSchema = z.object({
   isCustom: z.boolean().default(false),
   defaultRestSeconds: z.number().int().min(5).max(1800).nullable().optional(),
   favorite: z.boolean().optional(),
+  unilateral: z.boolean().optional(),
   archivedAt: iso.nullable().default(null),
   ...stamps,
 })

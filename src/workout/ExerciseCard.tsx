@@ -6,6 +6,7 @@ import { formatDate, formatSetsCompact } from '../ui/format'
 import { IconArrowDown, IconArrowUp, IconMore, IconPlus } from '../ui/icons'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
+import { useExercises } from '../data/hooks'
 import { SetRow } from './SetRow'
 import {
   addSet,
@@ -49,6 +50,7 @@ export function ExerciseCard({
   extraFitIds,
 }: Props) {
   const { we, sets } = view
+  const unilateral = !!useExercises().find((e) => e.id === we.performedExerciseId)?.unilateral
   const { guard, show } = useToast()
   const [menu, setMenu] = useState(false)
   const [replacing, setReplacing] = useState(false)
@@ -105,15 +107,22 @@ export function ExerciseCard({
 
       {!skipped && (
         <>
-          <div className="set-grid" aria-hidden="true">
+          <div className={`set-grid ${unilateral ? 'sides' : ''}`} aria-hidden="true">
             <span className="set-grid-head">Set</span>
             <span className="set-grid-head">{sets[0]?.weightUnit ?? 'kg'}</span>
-            <span className="set-grid-head">Reps</span>
-            <span />
+            <span className="set-grid-head">{unilateral ? 'Reps / side' : 'Reps'}</span>
+            {unilateral ? (
+              <span className="side-heads">
+                <span className="set-grid-head">L</span>
+                <span className="set-grid-head">R</span>
+              </span>
+            ) : (
+              <span />
+            )}
           </div>
-          <div className="set-grid">
+          <div className={`set-grid ${unilateral ? 'sides' : ''}`}>
             {sets.map((s) => (
-              <SetRow key={s.id} set={s} label={`Set ${s.setNumber}`} />
+              <SetRow key={s.id} set={s} label={`Set ${s.setNumber}`} unilateral={unilateral} />
             ))}
           </div>
           <button type="button" className="btn ghost block small" onClick={() => void guard(() => addSet(we.id))}>

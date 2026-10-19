@@ -10,6 +10,7 @@ import type {
   Location,
   SetRecord,
   SetType,
+  Side,
   WeightUnit,
   WorkoutExercise,
   WorkoutSession,
@@ -334,12 +335,20 @@ export interface WorkoutSummary {
   volume: Partial<Record<WeightUnit, number>>
 }
 
+/** Exercise instances whose exercise is done one side at a time (their sets count twice in volume). */
+async function unilateralInstanceIds(instances: WorkoutExercise[]): Promise<Set<string>> {
+  const exercises = await db.exercises.bulkGet([...new Set(instances.map((i) => i.performedExerciseId))])
+  const ids = new Set(exercises.filter((e) => e?.unilateral).map((e) => e!.id))
+  return new Set(instances.filter((i) => ids.has(i.performedExerciseId)).map((i) => i.id))
+}
+
 export async function summarizeSession(sessionId: string): Promise<WorkoutSummary> {
   const session = await db.sessions.get(sessionId)
   const exercises = await db.workoutExercises.where('sessionId').equals(sessionId).toArray()
   const sets = (await db.sets.where('sessionId').equals(sessionId).toArray()).filter((s) => s.isCompleted)
   const cardio = await db.cardio.where('sessionId').equals(sessionId).toArray()
   const { includeWarmupsInStats } = await getSettings()
+  const unilateral = await unilateralInstanceIds(exercises)
   const volume: WorkoutSummary['volume'] = {}
   for (const s of sets) {
     if (
@@ -349,7 +358,8 @@ export async function summarizeSession(sessionId: string): Promise<WorkoutSummar
       s.reps == null
     )
       continue
-    volume[s.weightUnit] = (volume[s.weightUnit] ?? 0) + s.weightValue * s.reps
+    const sides = unilateral.has(s.workoutExerciseId) ? 2 : 1
+    volume[s.weightUnit] = (volume[s.weightUnit] ?? 0) + s.weightValue * s.reps * sides
   }
   const withSets = new Set(sets.map((s) => s.workoutExerciseId))
   return {
@@ -805,6 +815,7 @@ export async function completeSet(setId: string, values: SetPatch = {}): Promise
       locationNameSnapshot: loc.name,
       updatedAt: nowIso(),
     }
+    delete merged.sideDone // both sides are done now
     await db.sets.put(merged)
     await db.workoutExercises.update(set.workoutExerciseId, { status: 'active' })
 
@@ -833,11 +844,38 @@ export async function completeSet(setId: string, values: SetPatch = {}): Promise
   })
 }
 
-export async function uncompleteSet(setId: string): Promise<void> {
+/** `keepSide`: one-sided exercise, only the other side is undone. */
+export async function uncompleteSet(setId: string, opts: { keepSide?: Side } = {}): Promise<void> {
   const set = await db.sets.get(setId)
   if (!set || !set.isCompleted) return
   await requireActive(set.sessionId)
-  await db.sets.update(setId, { isCompleted: false, performedAt: null, updatedAt: nowIso() })
+  await db.sets.update(setId, {
+    isCompleted: false,
+    sideDone: opts.keepSide,
+    performedAt: null,
+    updatedAt: nowIso(),
+  })
+}
+
+/**
+ * Tick or untick one side of a one-sided exercise, in any order. The set is completed once both sides are
+ * ticked; returns true then, so the caller can start the rest timer.
+ */
+export async function toggleSide(setId: string, side: Side): Promise<boolean> {
+  const set = await db.sets.get(setId)
+  if (!set) throw new Error('Set not found')
+  const other: Side = side === 'left' ? 'right' : 'left'
+  if (set.isCompleted) {
+    await uncompleteSet(setId, { keepSide: other })
+    return false
+  }
+  if (set.sideDone === other) {
+    await completeSet(setId)
+    return true
+  }
+  await requireActive(set.sessionId)
+  await db.sets.update(setId, { sideDone: set.sideDone === side ? undefined : side, updatedAt: nowIso() })
+  return false
 }
 
 /**

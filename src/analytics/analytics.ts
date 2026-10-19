@@ -12,18 +12,29 @@ export interface StatsData {
   instances: WorkoutExercise[]
   /** Completed sets of those sessions only. */
   sets: SetRecord[]
+  /** Exercises done one side at a time: a set's volume counts for both sides. */
+  unilateral: Set<string>
 }
 
 export async function loadStatsData(): Promise<StatsData> {
   const sessions = await db.sessions.where('status').equals('completed').toArray()
   const ids = new Set(sessions.map((s) => s.id))
-  const [instances, sets] = await Promise.all([db.workoutExercises.toArray(), db.sets.toArray()])
+  const [instances, sets, exercises] = await Promise.all([
+    db.workoutExercises.toArray(),
+    db.sets.toArray(),
+    db.exercises.toArray(),
+  ])
   return {
     sessions,
     instances: instances.filter((i) => ids.has(i.sessionId)),
     sets: sets.filter((s) => s.isCompleted && ids.has(s.sessionId)),
+    unilateral: new Set(exercises.filter((e) => e.unilateral).map((e) => e.id)),
   }
 }
+
+/** Instances whose sets count twice in volume (one-sided exercises: both sides are logged as one set). */
+const unilateralInstances = (data: StatsData): Set<string> =>
+  new Set(data.instances.filter((i) => data.unilateral.has(i.performedExerciseId)).map((i) => i.id))
 
 // ---------------------------------------------------------------------------
 // Dates — "YYYY-MM-DD" keys, calendar maths in UTC so DST never shifts a day.
@@ -80,6 +91,7 @@ export const toKg = (value: number, unit: WeightUnit): number => (unit === 'lb' 
 
 export function dailyActivity(data: StatsData, opts: { includeWarmups: boolean }): Map<DateKey, DayActivity> {
   const setsBySession = groupBy(data.sets, (s) => s.sessionId)
+  const twoSided = unilateralInstances(data)
   const out = new Map<DateKey, DayActivity>()
   for (const session of data.sessions) {
     const sets = (setsBySession.get(session.id) ?? []).filter((s) => opts.includeWarmups || s.setType !== 'warmup')
@@ -98,7 +110,7 @@ export function dailyActivity(data: StatsData, opts: { includeWarmups: boolean }
     day.sets += sets.length
     for (const s of sets) {
       if (s.loadType === 'weight' && s.weightValue != null && s.reps != null)
-        day.volumeKg += toKg(s.weightValue, s.weightUnit) * s.reps
+        day.volumeKg += toKg(s.weightValue, s.weightUnit) * s.reps * (twoSided.has(s.workoutExerciseId) ? 2 : 1)
     }
     if (session.endedAt)
       day.durationSeconds += Math.max(0, (instant(session.endedAt) - instant(session.startedAt)) / 1000)
@@ -170,6 +182,7 @@ export function exerciseStats(
   const instanceIds = new Set(mine.map((i) => i.id))
   const supersetInstances = new Set(mine.filter((i) => i.supersetGroupId).map((i) => i.id))
   const sessionById = new Map(data.sessions.map((s) => [s.id, s]))
+  const sides = data.unilateral.has(exerciseId) ? 2 : 1
   const sets = data.sets.filter((s) => {
     if (!instanceIds.has(s.workoutExerciseId)) return false
     if (opts.supersets === 'exclude' && supersetInstances.has(s.workoutExerciseId)) return false
@@ -198,7 +211,7 @@ export function exerciseStats(
       const est = estimateOneRepMax(w, reps)
       if (est != null && (e1rm == null || est > e1rm)) e1rm = est
       if (w != null) {
-        volume += w * reps
+        volume += w * reps * sides
         if (topWeight == null || w > topWeight || (w === topWeight && reps > (repsAtTop ?? 0))) {
           topWeight = w
           repsAtTop = reps

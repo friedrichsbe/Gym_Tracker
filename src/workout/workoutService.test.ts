@@ -20,6 +20,7 @@ import {
   restoreSet,
   startWorkout,
   substituteExercise,
+  toggleSide,
   uncompleteSet,
   updateSet,
 } from './workoutService'
@@ -91,6 +92,30 @@ describe('session lifecycle', () => {
     await completeSet(sets[1].id, { weightValue: 0, reps: 10 }) // zero is a real value
     const summary = await finishWorkout({ sessionId: s.id })
     expect(summary.volume).toEqual({ kg: 600 })
+  })
+
+  it('one-sided exercises: both sides in any order complete the set, volume counts both sides', async () => {
+    const glute = (await createCustomExercise({ name: 'Glutaeus', unilateral: true })).exercise
+    const s = await startWorkout({})
+    await addExercise({ sessionId: s.id, exerciseId: glute.id })
+    const [set] = (await setsOf(s.id))[0].sets
+    await updateSet(set.id, { weightValue: 30, reps: 8 })
+    expect(await toggleSide(set.id, 'right')).toBe(false)
+    expect(await db.sets.get(set.id)).toMatchObject({ isCompleted: false, sideDone: 'right' })
+    expect(await toggleSide(set.id, 'right')).toBe(false) // untick again
+    expect(await db.sets.get(set.id)).toMatchObject({ isCompleted: false })
+    expect((await db.sets.get(set.id))!.sideDone).toBeUndefined()
+    await toggleSide(set.id, 'right')
+    expect(await toggleSide(set.id, 'left')).toBe(true)
+    expect(await db.sets.get(set.id)).toMatchObject({ isCompleted: true })
+    expect((await db.sets.get(set.id))!.sideDone).toBeUndefined()
+    // Unticking one side of a completed set keeps the other one ticked.
+    expect(await toggleSide(set.id, 'left')).toBe(false)
+    expect(await db.sets.get(set.id)).toMatchObject({ isCompleted: false, sideDone: 'right' })
+    expect(await toggleSide(set.id, 'left')).toBe(true)
+    const summary = await finishWorkout({ sessionId: s.id })
+    expect(summary.completedSets).toBe(1)
+    expect(summary.volume).toEqual({ kg: 480 })
   })
 
   it('discard keeps data but marks the session abandoned', async () => {

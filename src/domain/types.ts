@@ -23,6 +23,9 @@ export type PresetSwipeAction = 'none' | 'start' | 'edit' | 'duplicate' | 'archi
 
 export type EquipmentType = 'machine' | 'dumbbell' | 'barbell' | 'cable' | 'bodyweight' | 'other'
 
+/** Side of a one-sided exercise. */
+export type Side = 'left' | 'right'
+
 export type SetType = 'warmup' | 'working' | 'drop' | 'failure' | 'other'
 
 /**
@@ -56,6 +59,11 @@ export interface Exercise extends Timestamps {
   defaultRestSeconds?: number | null
   /** Starred by the user: listed first in the picker. */
   favorite?: boolean
+  /**
+   * Done one side at a time (left, then right). Weight and reps are logged per side and are the same for both;
+   * one set covers both sides, so it counts once but its volume twice.
+   */
+  unilateral?: boolean
   archivedAt: IsoTimestamp | null
 }
 
@@ -157,6 +165,8 @@ export interface SetRecord extends Timestamps {
   weightUnit: WeightUnit
   reps: number | null
   isCompleted: boolean
+  /** One-sided exercise: the side already ticked while the other is still open. A completed set has both done. */
+  sideDone?: Side
   performedAt: IsoTimestamp | null
   locationId: Uuid | null
   locationNameSnapshot: string | null

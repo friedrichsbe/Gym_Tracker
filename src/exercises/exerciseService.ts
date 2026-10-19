@@ -97,6 +97,7 @@ export async function createCustomExercise(input: {
   muscleTags?: string[]
   movementPattern?: string
   defaultRestSeconds?: number | null
+  unilateral?: boolean
 }): Promise<{ exercise: Exercise; created: boolean }> {
   const name = input.name.trim()
   if (!name) throw new Error('Exercise name is required')
@@ -112,6 +113,7 @@ export async function createCustomExercise(input: {
     muscleTags: input.muscleTags ?? [],
     movementPattern: input.movementPattern,
     defaultRestSeconds: input.defaultRestSeconds ?? null,
+    unilateral: input.unilateral || undefined,
     isCustom: true,
     archivedAt: null,
     createdAt: now,
@@ -224,6 +226,7 @@ export async function updateExercise(
     muscleTags?: string[]
     movementPattern?: string | null
     defaultRestSeconds?: number | null
+    unilateral?: boolean
   },
 ): Promise<void> {
   await db.transaction('rw', db.exercises, async () => {
@@ -252,6 +255,7 @@ export async function updateExercise(
       movementPattern: patch.movementPattern === null ? undefined : (patch.movementPattern ?? current.movementPattern),
       defaultRestSeconds:
         patch.defaultRestSeconds === undefined ? (current.defaultRestSeconds ?? null) : patch.defaultRestSeconds,
+      unilateral: (patch.unilateral ?? current.unilateral) || undefined,
       updatedAt: nowIso(),
     })
   })
