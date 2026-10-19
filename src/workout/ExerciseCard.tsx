@@ -28,6 +28,8 @@ interface Props {
   isLast: boolean
   /** Part of a superset (then up/down move the whole superset). */
   inSuperset: boolean
+  /** The exercise currently being worked on; gets an animated accent border. */
+  isCurrent: boolean
   /** The exercise below could be paired with this one. */
   canLinkNext: boolean
   day: DayType | null
@@ -41,6 +43,7 @@ export function ExerciseCard({
   isFirst,
   isLast,
   inSuperset,
+  isCurrent,
   canLinkNext,
   day,
   extraFitIds,
@@ -60,7 +63,7 @@ export function ExerciseCard({
 
   return (
     <section
-      className={`card exercise ${skipped ? 'skipped' : ''} ${we.isForeign ? 'foreign' : ''}`}
+      className={`card exercise ${skipped ? 'skipped' : ''} ${we.isForeign ? 'foreign' : ''} ${isCurrent && !skipped ? 'current' : ''}`}
       aria-label={we.performedNameSnapshot}
     >
       <div className="exercise-head">

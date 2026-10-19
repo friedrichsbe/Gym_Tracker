@@ -199,6 +199,8 @@ export interface AppSettings {
   lightStyle: LightStyle
   darkStyle: DarkStyle
   accent: AccentColor
+  /** Show the text labels under the icons in the bottom navigation bar (phones). */
+  navLabels: boolean
   defaultLocationId: Uuid | null
   /** Location used by the most recent workout; pre-selected on the next one. */
   lastLocationId: Uuid | null

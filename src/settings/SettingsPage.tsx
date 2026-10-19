@@ -50,7 +50,7 @@ const SECTIONS: Record<SectionId, Section> = {
   appearance: {
     id: 'appearance',
     title: 'Appearance',
-    description: 'Theme, style and accent colour.',
+    description: 'Theme, accent colour and navigation.',
     icon: <IconSun />,
     render: () => <AppearancePanel />,
   },

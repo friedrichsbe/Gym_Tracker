@@ -104,6 +104,21 @@ export function AppearancePanel() {
           {ACCENTS.find((a) => a.id === settings.accent)?.label} · used for buttons, completed sets and charts.
         </span>
       </section>
+
+      <section className="card stack" aria-labelledby="nav-title">
+        <h2 id="nav-title">Navigation</h2>
+        <div className="field">
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={settings.navLabels}
+              onChange={(e) => void guard(() => updateSettings({ navLabels: e.target.checked }))}
+            />
+            <span>Show labels in the bottom bar</span>
+          </label>
+          <span className="hint">Turn off to show only the icons for a cleaner look.</span>
+        </div>
+      </section>
     </>
   )
 }

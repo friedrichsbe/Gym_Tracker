@@ -67,8 +67,8 @@ export function RestTimerBar() {
     <div className={`rest-row rest-bar ${over ? 'over' : ''}`} role="timer" aria-label="Rest timer">
       <div className="rest-progress" style={{ width: `${pct}%` }} aria-hidden="true" />
       <span className="rest-time num">{formatClock(left)}</span>
-      <span className="rest-label small" role="status">
-        {over ? 'Resume — next set' : `Rest · ${timer.label}`}
+      <span className="rest-label" role="status">
+        {over ? 'Resume — next set' : 'Rest'}
       </span>
       {!over && (
         <span className="rest-actions">

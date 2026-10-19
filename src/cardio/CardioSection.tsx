@@ -8,6 +8,7 @@ import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
 import { LangToggle } from '../ui/LangToggle'
 import { useNameLang } from '../ui/lang'
+import { stopRest } from '../workout/restTimer'
 import { CARDIO_KIND_ORDER, cardioName, cardioSummary } from './cardioKinds'
 import { addPastCardio, isRunning, startCardio, stopCardio } from './cardioService'
 import { CardioSheet } from './CardioSheet'
@@ -72,7 +73,10 @@ export function CardioSection({ sessionId, slot, entries, canAdd = true, past = 
                 onClick={() =>
                   void guard(async () => {
                     if (past) setJustAdded((await addPastCardio({ sessionId, kind, slot })).id)
-                    else await startCardio({ sessionId, kind, slot })
+                    else {
+                      await startCardio({ sessionId, kind, slot })
+                      stopRest() // cardio is the next thing now; don't leave a rest countdown running beside it
+                    }
                     setPicking(false)
                   })
                 }

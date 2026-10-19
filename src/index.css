@@ -586,6 +586,18 @@ hr,
   display: none;
 }
 
+/* Optional icons-only bar (phones); the desktop sidebar always keeps its labels. */
+@media (max-width: 899px) {
+  .bottom-nav.icons-only .nav-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 @media (min-width: 900px) {
   .bottom-nav {
     inset: 0 auto 0 0;
@@ -1795,6 +1807,28 @@ details > .preset-list {
 .exercise.skipped {
   opacity: 0.55;
 }
+/* The exercise being worked on: accent border; only the Glow theme adds a soft pulse. */
+.exercise.current {
+  scroll-margin-top: 140px; /* clear the sticky workout bar (and rest timer) when scrolled into view */
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-theme='glow'] .exercise.current {
+    animation: current-glow 2.4s ease-in-out infinite;
+  }
+}
+@keyframes current-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px var(--accent),
+      0 0 14px 2px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+}
 .exercise-head {
   display: flex;
   align-items: flex-start;
@@ -2808,8 +2842,9 @@ table.data tbody tr:hover {
   position: relative;
 }
 .rest-time {
-  font-size: var(--text-lg);
-  font-weight: 700;
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--text);
   min-width: 3.2ch;
 }
 .rest-label {
@@ -2818,7 +2853,9 @@ table.data tbody tr:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text-2);
+  font-size: var(--text-xl);
+  font-weight: 800;
+  color: var(--text);
 }
 .rest-actions {
   display: flex;

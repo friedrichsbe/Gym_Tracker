@@ -149,6 +149,7 @@ export const settingsSchema = z
     lightStyle: z.enum(['light', 'glow']),
     darkStyle: z.enum(['dark', 'midnight']),
     accent: z.enum(['teal', 'blue', 'orchid', 'forest', 'ember', 'rose', 'graphite']),
+    navLabels: z.boolean(),
     defaultLocationId: nullableId,
     lastLocationId: nullableId,
     lastDayTypeId: nullableId,

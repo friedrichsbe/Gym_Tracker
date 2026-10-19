@@ -83,7 +83,7 @@ function Shell() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
-      <nav className="bottom-nav" aria-label="Main">
+      <nav className={`bottom-nav${settings.navLabels ? '' : ' icons-only'}`} aria-label="Main">
         <div className="brand" aria-hidden="true">
           <span className="brand-mark">
             <IconDumbbell />
@@ -92,23 +92,23 @@ function Shell() {
         </div>
         <NavLink to="/" end>
           <IconDumbbell />
-          Workout
+          <span className="nav-label">Workout</span>
         </NavLink>
         <NavLink to="/routines">
           <IconList />
-          Presets
+          <span className="nav-label">Presets</span>
         </NavLink>
         <NavLink to="/history">
           <IconClock />
-          History
+          <span className="nav-label">History</span>
         </NavLink>
         <NavLink to="/progress">
           <IconChart />
-          Progress
+          <span className="nav-label">Progress</span>
         </NavLink>
         <NavLink to="/settings">
           <IconSettings />
-          Settings
+          <span className="nav-label">Settings</span>
         </NavLink>
       </nav>
     </div>

@@ -47,6 +47,7 @@ export async function buildExport(): Promise<ExportFile> {
       lightStyle: settings.lightStyle,
       darkStyle: settings.darkStyle,
       accent: settings.accent,
+      navLabels: settings.navLabels,
       defaultLocationId: settings.defaultLocationId,
       lastLocationId: settings.lastLocationId,
       lastDayTypeId: settings.lastDayTypeId,

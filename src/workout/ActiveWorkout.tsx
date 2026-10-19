@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RecordsList } from '../analytics/RecordsList'
 import { CardioSection } from '../cardio/CardioSection'
@@ -26,6 +26,7 @@ import {
   finishWorkout,
   loadSessionView,
   summarizeSession,
+  type WorkoutExerciseView,
   type WorkoutSummary,
 } from './workoutService'
 
@@ -51,11 +52,24 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
   const [pickingLocation, setPickingLocation] = useState(false)
   const [finishing, setFinishing] = useState(false)
 
+  // Coming back to a running workout (e.g. via the Workout tab): jump to the current exercise, once per visit.
+  // Before the first completed set the top of the page is the right place, so nothing scrolls then.
+  const scrolled = useRef(false)
+  const loaded = !!data
+  const anyLogged = !!data?.exercises.some((e) => e.sets.some((s) => s.isCompleted))
+  useEffect(() => {
+    if (!loaded || scrolled.current) return
+    scrolled.current = true
+    if (!anyLogged) return
+    document.querySelector('.exercise.current')?.scrollIntoView({ block: 'start' })
+  }, [loaded, anyLogged])
+
   if (!data) return null
   const { session, exercises } = data
   const logged = exercises.some((e) => e.sets.some((s) => s.isCompleted))
   const locationName = data.location?.name ?? session.locationNameSnapshot
   const blocks = toBlocks(exercises, (e) => e.we.supersetGroupId)
+  const currentId = currentExerciseId(exercises)
 
   return (
     <>
@@ -118,6 +132,7 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
               isFirst={bi === 0}
               isLast={bi === blocks.length - 1}
               inSuperset={block.length > 1}
+              isCurrent={view.we.id === currentId}
               canLinkNext={!!next && (gid === null || next.we.supersetGroupId !== gid)}
               day={day}
               extraFitIds={extraFitIds}
@@ -192,6 +207,29 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
       />
     </>
   )
+}
+
+/**
+ * The exercise being worked on: the one with the most recently completed set while it still has open sets,
+ * otherwise the next unskipped exercise after it. Before the first set, the first unskipped exercise.
+ */
+function currentExerciseId(exercises: WorkoutExerciseView[]): string | null {
+  const open = exercises.filter((e) => e.we.status !== 'skipped')
+  if (open.length === 0) return null
+  let lastIdx = -1
+  let lastAt = ''
+  open.forEach((e, i) => {
+    for (const s of e.sets) {
+      if (s.isCompleted && (s.performedAt ?? '') >= lastAt) {
+        lastAt = s.performedAt ?? ''
+        lastIdx = i
+      }
+    }
+  })
+  if (lastIdx === -1) return open[0].we.id
+  const last = open[lastIdx]
+  if (last.sets.some((s) => !s.isCompleted)) return last.we.id
+  return (open[lastIdx + 1] ?? last).we.id
 }
 
 function FinishSheet(props: {

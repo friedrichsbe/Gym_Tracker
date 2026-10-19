@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   lightStyle: 'light',
   darkStyle: 'dark',
   accent: 'teal',
+  navLabels: true,
   defaultLocationId: null,
   lastLocationId: null,
   onboardingDone: false,
