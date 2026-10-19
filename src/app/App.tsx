@@ -1,3 +1,4 @@
+import { useLiveQuery } from 'dexie-react-hooks'
 import { lazy, Suspense, useEffect } from 'react'
 import { HashRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { ensureSchemaMetadata } from '../data/settings'
@@ -11,6 +12,7 @@ import { RoutineEditorPage } from '../routines/RoutineEditor'
 import { RoutinesPage } from '../routines/RoutinesPage'
 import { IconChart, IconClock, IconDumbbell, IconList, IconSettings } from '../ui/icons'
 import { ToastProvider } from '../ui/Toast'
+import { getActiveSession } from '../workout/workoutService'
 import { WorkoutPage } from '../workout/WorkoutPage'
 import { Onboarding } from './Onboarding'
 import { StorageGuard } from './StorageGuard'
@@ -21,6 +23,7 @@ const SettingsPage = lazy(() => import('../settings/SettingsPage').then((m) => (
 
 function Shell() {
   const settings = useSettingsLoaded()
+  const workoutLive = !!useLiveQuery(async () => (await getActiveSession()) ?? null, [])
 
   const onboarded = settings?.onboardingDone ?? false
   useEffect(() => {
@@ -90,8 +93,15 @@ function Shell() {
           </span>
           Gym Tracker
         </div>
-        <NavLink to="/" end>
-          <IconDumbbell />
+        <NavLink
+          to="/"
+          end
+          className={workoutLive ? 'nav-live' : undefined}
+          aria-label={workoutLive ? 'Workout, in progress' : undefined}
+        >
+          <span className="nav-glyph">
+            <IconDumbbell />
+          </span>
           <span className="nav-label">Workout</span>
         </NavLink>
         <NavLink to="/routines">
