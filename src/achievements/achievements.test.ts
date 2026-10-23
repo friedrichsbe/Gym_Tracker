@@ -220,5 +220,6 @@ describe('unlocks, wording and hall of fame', () => {
     expect(hall.weekday).toEqual({ day: 0, workouts: 1 })
     expect(hall.biggest?.sessionId).toBe('s1')
     expect(hall.usualStart).toBe(18 * 60)
+    expect(hall.bestWeek).toEqual({ week: '2026-03-02', workouts: 2, sets: 5 })
   })
 })

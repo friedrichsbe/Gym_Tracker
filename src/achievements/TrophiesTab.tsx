@@ -10,6 +10,7 @@ import {
   IconClock,
   IconCrown,
   IconDumbbell,
+  IconFlame,
   IconHeartPulse,
   IconLayers,
   IconPin,
@@ -311,6 +312,15 @@ function HallOfFameGrid({ hall, unit }: { hall: HallOfFame; unit: WeightUnit }) 
       label: 'Favourite weekday',
       value: WEEKDAYS[hall.weekday.day],
       sub: `${formatNumber(hall.weekday.workouts)} workouts`,
+    })
+  if (hall.bestWeek)
+    cards.push({
+      key: 'week',
+      icon: <IconFlame />,
+      label: 'Best week',
+      value: `${hall.bestWeek.workouts} workouts`,
+      // Noon, so the Monday never slips to Sunday in any time zone.
+      sub: `Week of ${milestoneDate(`${hall.bestWeek.week}T12:00:00`)} · ${formatNumber(hall.bestWeek.sets)} sets`,
     })
   if (hall.biggest)
     cards.push({

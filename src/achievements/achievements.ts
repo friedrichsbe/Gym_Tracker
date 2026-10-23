@@ -410,6 +410,8 @@ export interface HallOfFame {
   longest: { sessionId: string; at: IsoTimestamp; seconds: number } | null
   /** Median start time of day, in minutes after midnight (local time of each workout). */
   usualStart: number | null
+  /** The week (its Monday) with the most workouts. */
+  bestWeek: { week: DateKey; workouts: number; sets: number } | null
 }
 
 const top = <K>(counts: Map<K, number>): [K, number] | null => {
@@ -500,6 +502,14 @@ export function hallOfFame(
       longest = { sessionId: t.sessionId, at: t.startedAt, seconds: t.seconds }
   }
 
+  // Busiest week: most workouts; more sets break a tie.
+  let bestWeek: HallOfFame['bestWeek'] = null
+  for (const [week, list] of groupBy(totals, (t) => t.week)) {
+    const sets = list.reduce((n, t) => n + t.sets, 0)
+    if (!bestWeek || list.length > bestWeek.workouts || (list.length === bestWeek.workouts && sets > bestWeek.sets))
+      bestWeek = { week, workouts: list.length, sets }
+  }
+
   const starts = totals.map((t) => +t.startedAt.slice(11, 13) * 60 + +t.startedAt.slice(14, 16)).sort((a, b) => a - b)
 
   return {
@@ -514,5 +524,6 @@ export function hallOfFame(
     biggest,
     longest,
     usualStart: starts.length ? starts[Math.floor(starts.length / 2)] : null,
+    bestWeek,
   }
 }
