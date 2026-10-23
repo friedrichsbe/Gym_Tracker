@@ -3,7 +3,7 @@ import { stopRunningCardio } from '../cardio/cardioService'
 import { getSettings, updateSettings } from '../data/settings'
 import { fitsDay } from '../daytypes/dayTypeService'
 import { instant, newId, nowIso } from '../domain/time'
-import { moveBlock, normalizeGroupIds } from './supersets'
+import { moveBlock, moveBlockNext, normalizeGroupIds } from './supersets'
 import type {
   Exercise,
   LoadType,
@@ -643,6 +643,32 @@ export async function moveExercise(workoutExerciseId: string, direction: -1 | 1)
     )
     const i = list.findIndex((x) => x.id === we.id)
     const reordered = moveBlock(list, i, direction, (w) => w.supersetGroupId)
+    const changed = reordered.flatMap((w, p) => (w.position === p ? [] : [{ ...w, position: p }]))
+    if (changed.length) await db.workoutExercises.bulkPut(changed)
+  })
+}
+
+/** "Do next": puts the exercise (or its whole superset) below the started ones and above all not started yet. */
+export async function moveExerciseNext(workoutExerciseId: string): Promise<void> {
+  await db.transaction('rw', TABLES(), async () => {
+    const we = await db.workoutExercises.get(workoutExerciseId)
+    if (!we) return
+    await normalizePositions(we.sessionId)
+    const list = (await db.workoutExercises.where('sessionId').equals(we.sessionId).toArray()).sort(
+      (a, b) => a.position - b.position,
+    )
+    const started = new Set(
+      (await db.sets.where('sessionId').equals(we.sessionId).toArray())
+        .filter((s) => s.isCompleted)
+        .map((s) => s.workoutExerciseId),
+    )
+    const i = list.findIndex((x) => x.id === we.id)
+    const reordered = moveBlockNext(
+      list,
+      i,
+      (w) => w.supersetGroupId,
+      (w) => started.has(w.id),
+    )
     const changed = reordered.flatMap((w, p) => (w.position === p ? [] : [{ ...w, position: p }]))
     if (changed.length) await db.workoutExercises.bulkPut(changed)
   })

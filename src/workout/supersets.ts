@@ -57,6 +57,28 @@ export function moveBlock<T>(
   return blocks.flat()
 }
 
+/**
+ * "Do next": moves the block containing `index` right below the last started block, i.e. above every block that has
+ * not been started yet. A block that was started itself stays where it is. Returns the new order.
+ */
+export function moveBlockNext<T>(
+  items: readonly T[],
+  index: number,
+  groupOf: (item: T) => string | null | undefined,
+  started: (item: T) => boolean,
+): T[] {
+  const blocks = toBlocks(items, groupOf)
+  const bi = blocks.findIndex((b) => b.includes(items[index]))
+  if (bi < 0 || blocks[bi].some(started)) return [...items]
+  const [block] = blocks.splice(bi, 1)
+  let at = 0
+  blocks.forEach((b, j) => {
+    if (b.some(started)) at = j + 1
+  })
+  blocks.splice(at, 0, block)
+  return blocks.flat()
+}
+
 export function supersetLabel(size: number): string {
   return size <= 2 ? 'Superset' : size === 3 ? 'Tri-set' : 'Giant set'
 }

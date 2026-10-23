@@ -18,7 +18,7 @@ import { ExerciseCard } from './ExerciseCard'
 import { RestTimerBar } from './RestTimerBar'
 import { stopRest } from './restTimer'
 import { SupersetFrame } from './SupersetFrame'
-import { toBlocks } from './supersets'
+import { moveBlockNext, toBlocks } from './supersets'
 import {
   addExercise,
   changeSessionLocation,
@@ -134,6 +134,12 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
               inSuperset={block.length > 1}
               isCurrent={view.we.id === currentId}
               canLinkNext={!!next && (gid === null || next.we.supersetGroupId !== gid)}
+              canDoNext={moveBlockNext(
+                exercises,
+                i,
+                (v) => v.we.supersetGroupId,
+                (v) => v.sets.some((s) => s.isCompleted),
+              ).some((v, j) => v !== exercises[j])}
               day={day}
               extraFitIds={extraFitIds}
             />

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import type { DayType } from '../domain/types'
 import { ExercisePicker } from '../exercises/ExercisePicker'
 import { formatDate, formatSetsCompact } from '../ui/format'
-import { IconArrowDown, IconArrowUp, IconMore, IconPlus } from '../ui/icons'
+import { IconArrowDown, IconArrowUp, IconMore, IconPlay, IconPlus } from '../ui/icons'
 import { Sheet } from '../ui/Sheet'
 import { useToast } from '../ui/toastContext'
 import { useExercises } from '../data/hooks'
@@ -14,6 +14,7 @@ import {
   linkSuperset,
   unlinkSuperset,
   moveExercise,
+  moveExerciseNext,
   removeExercise,
   restoreExercise,
   skipExercise,
@@ -33,6 +34,8 @@ interface Props {
   isCurrent: boolean
   /** The exercise below could be paired with this one. */
   canLinkNext: boolean
+  /** "Do next" would move it: not started, and not already right below the started ones. */
+  canDoNext: boolean
   day: DayType | null
   extraFitIds?: ReadonlySet<string>
 }
@@ -46,6 +49,7 @@ export function ExerciseCard({
   inSuperset,
   isCurrent,
   canLinkNext,
+  canDoNext,
   day,
   extraFitIds,
 }: Props) {
@@ -185,6 +189,18 @@ export function ExerciseCard({
           >
             <IconArrowDown />
             Move {inSuperset ? 'superset ' : ''}down
+          </button>
+          <button
+            type="button"
+            className="btn grow"
+            disabled={!canDoNext}
+            onClick={() => {
+              setMenu(false)
+              void guard(() => moveExerciseNext(we.id))
+            }}
+          >
+            <IconPlay />
+            Do next
           </button>
         </div>
         <button

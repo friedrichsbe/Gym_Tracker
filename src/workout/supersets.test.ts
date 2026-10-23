@@ -24,7 +24,7 @@ import {
   unlinkSuperset,
 } from './workoutService'
 import { exerciseStats, loadStatsData } from '../analytics/analytics'
-import { moveBlock, normalizeGroupIds, supersetLabel, toBlocks } from './supersets'
+import { moveBlock, moveBlockNext, normalizeGroupIds, supersetLabel, toBlocks } from './supersets'
 
 let n = 0
 const ids = () => `new-${++n}`
@@ -56,6 +56,34 @@ describe('superset helpers', () => {
     expect(moveBlock(items, 0, 1, (i) => i.g).map((i) => i.k)).toEqual(['B', 'C', 'A', 'D'])
     expect(moveBlock(items, 0, -1, (i) => i.g).map((i) => i.k)).toEqual(['A', 'B', 'C', 'D'])
     expect([supersetLabel(2), supersetLabel(3), supersetLabel(4)]).toEqual(['Superset', 'Tri-set', 'Giant set'])
+  })
+
+  it('moves an exercise or superset up to "next": below the started ones, above everything else', () => {
+    const items = [
+      { k: 'A', g: null, s: true },
+      { k: 'B', g: null, s: true },
+      { k: 'C', g: null, s: false },
+      { k: 'D', g: 'x', s: false },
+      { k: 'E', g: 'x', s: false },
+      { k: 'F', g: null, s: false },
+    ]
+    const next = (i: number, list = items) =>
+      moveBlockNext(
+        list,
+        i,
+        (x) => x.g,
+        (x) => x.s,
+      )
+        .map((x) => x.k)
+        .join('')
+    expect(next(5)).toBe('ABFCDE')
+    expect(next(4)).toBe('ABDECF') // the whole superset moves
+    expect(next(2)).toBe('ABCDEF') // already next
+    expect(next(0)).toBe('ABCDEF') // started: stays
+    // Done out of order: it goes below the last started exercise.
+    expect(next(1, [items[2], items[5], items[1]])).toBe('CBF')
+    // Nothing started yet: to the top.
+    expect(next(2, [items[2], items[3], items[5]])).toBe('FCD')
   })
 })
 
