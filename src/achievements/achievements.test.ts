@@ -106,7 +106,7 @@ describe('running totals', () => {
 
     const volume = tracks.find((t) => t.def.id === 'volume')!
     expect(volume.value).toBe(12_000) // 12 × 100 kg × 10
-    expect(volume.unlocked.map((u) => u.sessionId)).toEqual(['s0', 's9']) // 1 t, 10 t
+    expect(volume.unlocked.map((u) => u.sessionId)).toEqual(['s4']) // 5 t
 
     const time = tracks.find((t) => t.def.id === 'time')!
     expect(time.unlocked.map((u) => u.sessionId)).toEqual(['s0', 's9']) // 1 h, 10 h

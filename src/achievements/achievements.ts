@@ -38,7 +38,8 @@ const TONNE = 1000
  * Sizing (≈3–4 workouts a week, ~20 sets and ~10 t per workout): the first levels come within days or weeks, about
  * half the ladder within the first year, the last level after roughly a decade of steady training.
  * Counts that grow linearly (workouts, sets, hours) get gently growing steps; volume, which grows faster as you get
- * stronger, gets steeper ones; streaks need every single week, so they top out at 5, 3, 2 and
+ * stronger, gets steeper ones — starting at 5 t, since a single workout already moves 5–10 t, so that it keeps pace
+ * with the other tracks from the first week on (checked with simulated casual, typical and heavy lifters); streaks need every single week, so they top out at 5, 3, 2 and
  * 1½ years (1+, 2+, 3+, 4+ workouts a week).
  */
 export const TRACKS: TrackDef[] = [
@@ -52,7 +53,7 @@ export const TRACKS: TrackDef[] = [
     id: 'volume',
     name: 'Volume',
     blurb: 'Total weight moved: weight × reps of every set.',
-    thresholds: [1, 10, 50, 100, 250, 500, 1000, 2000, 3500, 6000, 10000, 15000].map((t) => t * TONNE),
+    thresholds: [5, 50, 150, 350, 750, 1400, 2400, 3800, 5800, 8500, 12500, 18000].map((t) => t * TONNE),
   },
   {
     id: 'sets',
