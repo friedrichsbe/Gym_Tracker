@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { MilestoneTiles } from '../achievements/MilestoneTiles'
 import { UpdateBanner } from '../app/UpdateBanner'
 import { db } from '../data/db'
 import { useDayTypes, useLocations, useNow, useRoutines, useSettings } from '../data/hooks'
@@ -108,6 +109,7 @@ export function WorkoutHome() {
       </header>
       <UpdateBanner />
       <BackupReminder />
+      <MilestoneTiles />
 
       <section className="card home-start stack loose" aria-labelledby="start-label">
         <div className="home-start-head">

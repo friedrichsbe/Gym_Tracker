@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { SessionMilestones } from '../achievements/MilestoneTiles'
 import { RecordsList } from '../analytics/RecordsList'
 import { CardioSection } from '../cardio/CardioSection'
 import { loadCardio } from '../cardio/cardioService'
@@ -68,6 +69,7 @@ export function SessionDetailPage() {
   const [calloutDismissed, setCalloutDismissed] = useState(false)
   const justFinished = navState?.justFinished === true && !calloutDismissed
   const justCreated = navState?.justCreated === true && !calloutDismissed
+  const celebrate = navState?.justFinished === true
   // Dismiss for good: also drop the flag from the history entry, so going back here doesn't bring it back.
   const dismissCallout = () => {
     setCalloutDismissed(true)
@@ -99,6 +101,9 @@ export function SessionDetailPage() {
         <IconChevronLeft />
         History
       </Link>
+
+      {/* Just finished: milestones reached with this workout come first, with a little celebration. */}
+      {celebrate && <SessionMilestones sessionId={session.id} celebrate />}
 
       {justCreated && (
         <div className="card stack callout dismissible" role="status">
@@ -188,6 +193,7 @@ export function SessionDetailPage() {
       </section>
 
       <RecordsList sessionId={session.id} />
+      {!celebrate && <SessionMilestones sessionId={session.id} />}
 
       {/* 2 · What was done: cardio before, strength, cardio after — each its own zone. */}
       <div className="zones">

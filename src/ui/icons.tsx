@@ -197,3 +197,55 @@ export const IconDatabase = () => (
     <path d="M4.5 6v12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6M4.5 12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3" />
   </svg>
 )
+export const IconTrophy = () => (
+  <svg {...base}>
+    <path d="M8 4h8v5a4 4 0 0 1-8 0V4Z" />
+    <path d="M8 6H5a2.5 2.5 0 0 0 3 4M16 6h3a2.5 2.5 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4" />
+  </svg>
+)
+export const IconFlame = () => (
+  <svg {...base}>
+    <path d="M12 21a6.5 6.5 0 0 0 6.5-6.5c0-4-3-6.5-4.5-10-1.8 2.2-1.6 4.3-1.2 5.8-1.4-.6-2.5-2-2.8-3.6C7.7 8.6 5.5 11 5.5 14.5A6.5 6.5 0 0 0 12 21Z" />
+    <path d="M12 21a2.8 2.8 0 0 1-2.8-2.8c0-1.9 1.6-2.9 2.8-4.7 1.2 1.8 2.8 2.8 2.8 4.7A2.8 2.8 0 0 1 12 21Z" />
+  </svg>
+)
+export const IconFlames = () => (
+  <svg {...base}>
+    <path d="M9 21a5 5 0 0 0 5-5c0-3-2.3-5-3.4-7.6-1.4 1.7-1.2 3.3-.9 4.4-1.1-.5-1.9-1.5-2.1-2.7C6 11.6 4 13.3 4 16a5 5 0 0 0 5 5Z" />
+    <path d="M15.5 20.5A4.5 4.5 0 0 0 20 16c0-2.6-1.9-4.3-2.9-6.6-1.1 1.4-1 2.8-.8 3.8" />
+  </svg>
+)
+export const IconPlate = () => (
+  <svg {...base}>
+    <circle cx="12" cy="12" r="8.5" />
+    <circle cx="12" cy="12" r="5" />
+    <circle cx="12" cy="12" r="1.5" />
+  </svg>
+)
+export const IconLayers = () => (
+  <svg {...base}>
+    <path d="m12 4 8.5 4.5L12 13 3.5 8.5 12 4Z" />
+    <path d="m3.5 12.5 8.5 4.5 8.5-4.5M3.5 16.5 12 21l8.5-4.5" />
+  </svg>
+)
+export const IconCrown = () => (
+  <svg {...base}>
+    <path d="M4 18h16M5 15 3.5 7l5 3.5L12 5l3.5 5.5 5-3.5L19 15H5Z" />
+  </svg>
+)
+export const IconSunrise = () => (
+  <svg {...base}>
+    <path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 4v4M5.6 9.6 7 11M18.4 9.6 17 11M2 14h2M20 14h2" />
+  </svg>
+)
+export const IconBolt = () => (
+  <svg {...base}>
+    <path d="M13 3 5 13.5h6L10 21l8-10.5h-6L13 3Z" />
+  </svg>
+)
+export const IconRocket = () => (
+  <svg {...base}>
+    <path d="M12 3c3 2 4.5 5.5 4.5 9.5L14 16h-4l-2.5-3.5C7.5 8.5 9 5 12 3Z" />
+    <path d="M7.5 12.5 5 15l1 4 3-2M16.5 12.5 19 15l-1 4-3-2M12 9h.01M11 19.5l1 1.5 1-1.5" />
+  </svg>
+)

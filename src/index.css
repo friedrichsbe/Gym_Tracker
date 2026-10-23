@@ -3856,3 +3856,724 @@ details > .preset-grid {
     transform: rotate(360deg);
   }
 }
+
+/* ==========================================================================
+   Trophies — the playful corner of Progress: medals, milestones, hall of fame.
+   Medal tiers bring their own colours (--t-light / --t-base / --t-dark, set inline).
+   ========================================================================== */
+
+/* Four tabs must fit on a phone. */
+.tabs {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+@media (max-width: 420px) {
+  .tabs {
+    gap: var(--space-4);
+  }
+  .tabs button {
+    font-size: var(--text-sm);
+  }
+}
+
+/* ---- Medal ---- */
+.medal {
+  position: relative;
+  display: inline-block;
+  flex: none;
+}
+.medal svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.22));
+}
+.medal-icon {
+  position: absolute;
+  left: 50%;
+  top: var(--cy, 55%);
+  width: 32%;
+  height: 32%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.5));
+  display: grid;
+  place-items: center;
+}
+.medal-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 2.25;
+  filter: none;
+}
+.medal.locked svg {
+  filter: none;
+}
+.medal.locked .medal-icon {
+  color: var(--faint);
+  filter: none;
+}
+.medal.preview {
+  opacity: 0.5;
+  filter: grayscale(0.4);
+}
+.medal.tier-10 {
+  --medal-glow: rgba(140, 120, 255, 0.65);
+}
+.medal.tier-11 {
+  --medal-glow: rgba(120, 220, 255, 0.7);
+}
+.medal.tier-12 {
+  --medal-glow: rgba(255, 170, 60, 0.75);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .medal.g4:not(.preview) svg {
+    animation: medal-glow 2.8s ease-in-out infinite;
+  }
+  .medal.pop-in {
+    animation: medal-pop 700ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  }
+}
+@keyframes medal-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.22)) drop-shadow(0 0 3px var(--medal-glow));
+  }
+  50% {
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.22)) drop-shadow(0 0 10px var(--medal-glow));
+  }
+}
+@keyframes medal-pop {
+  from {
+    transform: scale(0.3) rotate(-18deg);
+    opacity: 0;
+  }
+}
+
+/* ---- Rank hero ---- */
+.trophy-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  color: #f4f1ff;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background:
+    radial-gradient(70% 90% at 100% 0%, rgba(255, 184, 77, 0.32), transparent 60%),
+    radial-gradient(60% 80% at 0% 100%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 65%),
+    linear-gradient(140deg, #1d1838 0%, #14213a 55%, #0e2b32 100%);
+  box-shadow: var(--shadow-md);
+}
+.trophy-hero::after {
+  /* a few faint stars */
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.55;
+  background-image:
+    radial-gradient(1.5px 1.5px at 18% 22%, #fff, transparent), radial-gradient(1px 1px at 72% 18%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 88% 46%, #fff, transparent), radial-gradient(1px 1px at 40% 12%, #fff, transparent),
+    radial-gradient(1px 1px at 58% 38%, #fff, transparent);
+}
+.trophy-hero .overline {
+  color: rgba(244, 241, 255, 0.65);
+}
+.trophy-hero h2 {
+  font-size: var(--text-2xl);
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.trophy-hero p {
+  color: rgba(244, 241, 255, 0.8);
+}
+.trophy-hero-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.rank-ring {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  flex: none;
+}
+.rank-ring svg {
+  width: 100%;
+  height: 100%;
+}
+.rank-track {
+  fill: rgba(255, 255, 255, 0.06);
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 7;
+}
+.rank-fill {
+  fill: none;
+  stroke: #ffc95c;
+  stroke-width: 7;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px rgba(255, 201, 92, 0.6));
+}
+.rank-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.rank-num .num {
+  font-size: 28px;
+  font-weight: 750;
+  color: #fff;
+}
+.rank-num small {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(244, 241, 255, 0.6);
+  margin-top: 2px;
+}
+.trophy-shelf {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-3) var(--space-2) var(--space-2);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-2) var(--space-1);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+@media (min-width: 560px) {
+  .trophy-shelf {
+    grid-template-columns: repeat(10, 1fr);
+  }
+}
+.trophy-shelf button {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: inherit;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-1) 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease);
+}
+.trophy-shelf button:hover {
+  transform: translateY(-2px);
+}
+.trophy-shelf .medal.locked svg {
+  opacity: 0.35;
+}
+.shelf-level {
+  font-size: 11px;
+  font-weight: 650;
+  color: rgba(244, 241, 255, 0.75);
+}
+.btn.hero-btn {
+  align-self: stretch;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+.btn.hero-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ---- Milestone showcase ---- */
+.segmented.small button {
+  min-height: 28px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+}
+.milestone-feature,
+.milestone-card,
+.milestone-tile {
+  --tint: color-mix(in srgb, var(--t-base) 26%, var(--surface));
+  --tint-2: color-mix(in srgb, var(--t-light) 18%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--t-base) 45%, transparent);
+  background:
+    radial-gradient(80% 120% at 0% 0%, color-mix(in srgb, var(--t-light) 35%, transparent), transparent 60%),
+    linear-gradient(135deg, var(--tint), var(--tint-2));
+  color: var(--text);
+}
+.milestone-feature {
+  appearance: none;
+  font: inherit;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--dur) var(--ease);
+}
+.milestone-feature:hover,
+.milestone-card:hover {
+  transform: translateY(-2px);
+}
+.milestone-feature::after {
+  /* slow sheen across the card */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.28) 50%, transparent 65%);
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .milestone-feature::after {
+    animation: sheen 5s ease-in-out 1s infinite;
+  }
+}
+@keyframes sheen {
+  0%,
+  60% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+.milestone-feature .overline,
+.milestone-tile .overline {
+  color: color-mix(in srgb, var(--t-dark) 70%, var(--text));
+}
+:root:is([data-theme='dark'], [data-theme='midnight']) .milestone-feature .overline,
+:root:is([data-theme='dark'], [data-theme='midnight']) .milestone-tile .overline {
+  color: color-mix(in srgb, var(--t-light) 75%, var(--text));
+}
+.milestone-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.milestone-reel {
+  list-style: none;
+  margin: 0 calc(var(--space-4) * -1);
+  padding: var(--space-1) var(--space-4) var(--space-2);
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 var(--space-4);
+  scrollbar-width: none;
+}
+.milestone-reel li {
+  scroll-snap-align: start;
+  flex: none;
+}
+.milestone-card {
+  appearance: none;
+  font: inherit;
+  width: 132px;
+  height: 100%;
+  padding: var(--space-4) var(--space-3);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease);
+}
+.milestone-card strong {
+  font-size: var(--text-sm);
+  line-height: 1.25;
+}
+
+/* ---- Almost there ---- */
+.next-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.next-row,
+.track-row {
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+.next-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-sm);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+.next-row:hover {
+  background: var(--surface-2);
+}
+.next-title,
+.track-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.trophy-bar {
+  --bar: var(--accent);
+  display: block;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.trophy-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--bar) 65%, #fff), var(--bar));
+  transition: width var(--dur-slow) var(--ease);
+}
+.trophy-bar.track-workouts {
+  --bar: #14b8a6;
+}
+.trophy-bar.track-volume {
+  --bar: #f97316;
+}
+.trophy-bar.track-sets {
+  --bar: #3b82f6;
+}
+.trophy-bar.track-reps {
+  --bar: #8b5cf6;
+}
+.trophy-bar.track-time {
+  --bar: #eab308;
+}
+.trophy-bar.track-cardio {
+  --bar: #ec4899;
+}
+.trophy-bar.track-streak1 {
+  --bar: #ef4444;
+}
+.trophy-bar.track-streak2 {
+  --bar: #d946ef;
+}
+
+/* ---- Hall of fame ---- */
+.fame-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+@media (min-width: 600px) {
+  .fame-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.fame-card {
+  --hue: #14b8a6;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--hue) 28%, var(--border));
+  background:
+    radial-gradient(90% 70% at 100% 0%, color-mix(in srgb, var(--hue) 16%, transparent), transparent 70%),
+    var(--surface);
+  box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+.fame-card > div,
+.fame-card > button {
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  width: 100%;
+  height: 100%;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fame-card > button {
+  cursor: pointer;
+  border-radius: inherit;
+}
+.fame-card > button:hover {
+  background: var(--surface-hover);
+}
+.fame-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  margin-bottom: var(--space-2);
+  color: var(--hue);
+  background: color-mix(in srgb, var(--hue) 15%, transparent);
+}
+.fame-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.fame-value {
+  font-size: var(--text-md);
+  font-weight: 650;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.fame-sub {
+  color: var(--muted);
+}
+.fame-card.hue-0 {
+  --hue: #f97316;
+}
+.fame-card.hue-1 {
+  --hue: #3b82f6;
+}
+.fame-card.hue-2 {
+  --hue: #8b5cf6;
+}
+.fame-card.hue-3 {
+  --hue: #10b981;
+}
+.fame-card.hue-4 {
+  --hue: #ec4899;
+}
+.fame-card.hue-5 {
+  --hue: #eab308;
+}
+
+/* ---- Tracks & levels sheet ---- */
+.track-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.track-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  scroll-margin-top: var(--space-2);
+}
+.track-item.open {
+  border-color: var(--border-strong);
+}
+.track-row {
+  background: none;
+  border: 0;
+  padding: var(--space-3);
+  border-radius: inherit;
+}
+.track-row:hover {
+  background: var(--surface-hover);
+}
+.track-chevron {
+  color: var(--muted);
+  transition: transform var(--dur) var(--ease);
+}
+.track-item.open .track-chevron {
+  transform: rotate(180deg);
+}
+.ladder {
+  padding: 0 var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.ladder-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-2);
+}
+@media (min-width: 560px) {
+  .ladder-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+.rung {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: var(--space-2) 2px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+.rung.next {
+  background: var(--accent-subtle);
+  box-shadow: inset 0 0 0 1.5px var(--accent-border);
+}
+.rung-value {
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+.rung.locked .rung-value {
+  color: var(--muted);
+}
+.rung-sub {
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.2;
+}
+.rung.reached .rung-sub {
+  color: var(--text-2);
+}
+.ladder-done {
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+/* ---- Milestone tiles on the workout screen ---- */
+.milestone-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.milestone-tile {
+  position: relative;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .milestone-tile {
+    animation: sheet-in var(--dur-slow) var(--ease);
+  }
+}
+.milestone-tile-main {
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) calc(var(--space-4) + 28px) var(--space-3) var(--space-3);
+  cursor: pointer;
+}
+.milestone-tile-main > svg {
+  color: var(--muted);
+  flex: none;
+}
+.milestone-tile .milestone-title {
+  font-size: var(--text-md);
+}
+.milestone-tile-close {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  color: var(--muted);
+}
+
+/* ---- Milestones of one workout (session detail) ---- */
+.session-milestones {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-color: color-mix(in srgb, var(--t-base) 45%, transparent);
+  background:
+    radial-gradient(80% 120% at 0% 0%, color-mix(in srgb, var(--t-light) 26%, transparent), transparent 60%),
+    linear-gradient(135deg, color-mix(in srgb, var(--t-base) 16%, var(--surface)), var(--surface));
+}
+.session-milestone-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.session-milestone-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.session-milestones .link-subtle {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.confetti i {
+  position: absolute;
+  top: -14px;
+  left: calc(var(--i) * 5.4% + 2%);
+  width: 7px;
+  height: 12px;
+  border-radius: 2px;
+  background: #f97316;
+  opacity: 0;
+}
+.confetti i:nth-child(5n + 1) {
+  background: #3b82f6;
+}
+.confetti i:nth-child(5n + 2) {
+  background: #eab308;
+}
+.confetti i:nth-child(5n + 3) {
+  background: #ec4899;
+}
+.confetti i:nth-child(5n + 4) {
+  background: #10b981;
+}
+.confetti i:nth-child(odd) {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .confetti i {
+    animation: confetti-fall 1.9s cubic-bezier(0.3, 0.6, 0.5, 1) calc(var(--i) * 45ms) 2 both;
+  }
+}
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(240px) translateX(calc((var(--i) - 9) * 3px)) rotate(540deg);
+  }
+}
+.trophy-bar.track-streak3 {
+  --bar: #6366f1;
+}
+.trophy-bar.track-streak4 {
+  --bar: #06b6d4;
+}
