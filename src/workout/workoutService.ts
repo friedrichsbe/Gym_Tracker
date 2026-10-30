@@ -674,6 +674,49 @@ export async function moveExerciseNext(workoutExerciseId: string): Promise<void>
   })
 }
 
+/** Reorders the members of the superset an exercise belongs to; the superset keeps its place in the workout. */
+async function reorderSuperset(
+  workoutExerciseId: string,
+  reorder: (members: WorkoutExercise[], index: number, started: Set<string>) => WorkoutExercise[],
+): Promise<void> {
+  await db.transaction('rw', TABLES(), async () => {
+    const we = await db.workoutExercises.get(workoutExerciseId)
+    if (!we?.supersetGroupId) return
+    await normalizePositions(we.sessionId)
+    const members = (await db.workoutExercises.where('sessionId').equals(we.sessionId).toArray())
+      .filter((x) => x.supersetGroupId === we.supersetGroupId)
+      .sort((a, b) => a.position - b.position)
+    const slots = members.map((m) => m.position)
+    const started = new Set(
+      (await db.sets.where('sessionId').equals(we.sessionId).toArray())
+        .filter((s) => s.isCompleted)
+        .map((s) => s.workoutExerciseId),
+    )
+    const reordered = reorder(
+      members,
+      members.findIndex((m) => m.id === we.id),
+      started,
+    )
+    const changed = reordered.flatMap((m, i) => (m.position === slots[i] ? [] : [{ ...m, position: slots[i] }]))
+    if (changed.length) await db.workoutExercises.bulkPut(changed)
+  })
+}
+
+/** Moves an exercise one place up/down inside its superset. */
+export const moveWithinSuperset = (workoutExerciseId: string, direction: -1 | 1) =>
+  reorderSuperset(workoutExerciseId, (members, i) => moveBlock(members, i, direction, () => null))
+
+/** "Do next" inside a superset: below the members already started, above the others. */
+export const moveWithinSupersetNext = (workoutExerciseId: string) =>
+  reorderSuperset(workoutExerciseId, (members, i, started) =>
+    moveBlockNext(
+      members,
+      i,
+      () => null,
+      (m) => started.has(m.id),
+    ),
+  )
+
 export interface RemovedExercise {
   we: WorkoutExercise
   sets: SetRecord[]
@@ -720,6 +763,68 @@ export async function restoreExercise(removed: RemovedExercise): Promise<void> {
     }
     await normalizePositions(we.sessionId)
     await normalizeGroups(we.sessionId)
+  })
+}
+
+/** Skips (or unskips) every exercise of a superset. Skipping needs all of them to be without completed sets. */
+export async function skipSuperset(workoutExerciseId: string, skipped: boolean): Promise<void> {
+  await db.transaction('rw', TABLES(), async () => {
+    const we = await db.workoutExercises.get(workoutExerciseId)
+    if (!we?.supersetGroupId) return
+    await requireActive(we.sessionId)
+    const members = (await db.workoutExercises.where('sessionId').equals(we.sessionId).toArray()).filter(
+      (x) => x.supersetGroupId === we.supersetGroupId,
+    )
+    const sets = await db.sets.where('sessionId').equals(we.sessionId).toArray()
+    const ids = new Set(members.map((m) => m.id))
+    if (skipped && sets.some((s) => s.isCompleted && ids.has(s.workoutExerciseId)))
+      throw new Error('The superset already has completed sets')
+    await db.workoutExercises.bulkPut(members.map((m) => ({ ...m, status: skipped ? 'skipped' : 'planned' })))
+  })
+}
+
+/** What `removeSuperset` took out, for undo. */
+export interface RemovedSuperset {
+  members: WorkoutExercise[]
+  sets: SetRecord[]
+}
+
+/** Removes a whole superset; only allowed while none of its exercises has a completed set. */
+export async function removeSuperset(workoutExerciseId: string): Promise<RemovedSuperset | undefined> {
+  return db.transaction('rw', TABLES(), async () => {
+    const we = await db.workoutExercises.get(workoutExerciseId)
+    if (!we?.supersetGroupId) return undefined
+    await requireActive(we.sessionId)
+    await normalizePositions(we.sessionId)
+    const members = (await db.workoutExercises.where('sessionId').equals(we.sessionId).toArray())
+      .filter((x) => x.supersetGroupId === we.supersetGroupId)
+      .sort((a, b) => a.position - b.position)
+    const ids = new Set(members.map((m) => m.id))
+    const sets = (await db.sets.where('sessionId').equals(we.sessionId).toArray()).filter((s) =>
+      ids.has(s.workoutExerciseId),
+    )
+    if (sets.some((s) => s.isCompleted)) throw new Error('The superset has completed sets; skip it instead')
+    await db.sets.bulkDelete(sets.map((s) => s.id))
+    await db.workoutExercises.bulkDelete([...ids])
+    await normalizePositions(we.sessionId)
+    return { members, sets }
+  })
+}
+
+/** Undo of `removeSuperset`: puts the superset back where it was. */
+export async function restoreSuperset(removed: RemovedSuperset): Promise<void> {
+  await db.transaction('rw', TABLES(), async () => {
+    const first = removed.members[0]
+    if (!first) return
+    await requireActive(first.sessionId)
+    const n = removed.members.length
+    const list = await db.workoutExercises.where('sessionId').equals(first.sessionId).toArray()
+    const shifted = list.filter((x) => x.position >= first.position).map((x) => ({ ...x, position: x.position + n }))
+    if (shifted.length) await db.workoutExercises.bulkPut(shifted)
+    await db.workoutExercises.bulkPut(removed.members.map((m, i) => ({ ...m, position: first.position + i })))
+    if (removed.sets.length) await db.sets.bulkPut(removed.sets)
+    await normalizePositions(first.sessionId)
+    await normalizeGroups(first.sessionId)
   })
 }
 

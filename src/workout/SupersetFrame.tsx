@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react'
 import { supersetLabel } from './supersets'
 
-/** Visual wrapper for exercises done as a superset: one violet rail, one label, optional "up next" hint. */
-export function SupersetFrame(props: { size: number; hint?: string; children: ReactNode }) {
+/**
+ * Visual wrapper for exercises done as a superset: one violet rail, one label, optional "up next" hint and an
+ * optional menu for the superset as a whole (top right).
+ */
+export function SupersetFrame(props: { size: number; hint?: string; menu?: ReactNode; children: ReactNode }) {
   const label = supersetLabel(props.size)
   return (
     <div className="superset" role="group" aria-label={`${label} of ${props.size} exercises`}>
@@ -14,6 +17,7 @@ export function SupersetFrame(props: { size: number; hint?: string; children: Re
             Next: {props.hint}
           </strong>
         )}
+        {props.menu}
       </div>
       {props.children}
     </div>

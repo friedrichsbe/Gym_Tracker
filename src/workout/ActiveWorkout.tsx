@@ -18,6 +18,7 @@ import { ExerciseCard } from './ExerciseCard'
 import { RestTimerBar } from './RestTimerBar'
 import { stopRest } from './restTimer'
 import { SupersetFrame } from './SupersetFrame'
+import { SupersetMenu } from './SupersetMenu'
 import { moveBlockNext, toBlocks } from './supersets'
 import {
   addExercise,
@@ -119,7 +120,16 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
       )}
 
       {blocks.map((block, bi) => {
-        const cards = block.map((view) => {
+        const inSuperset = block.length > 1
+        const started = (v: WorkoutExerciseView) => v.sets.some((s) => s.isCompleted)
+        // "Do next" would change something: for a member inside its superset, otherwise in the whole workout.
+        const movesOnDoNext = (
+          list: WorkoutExerciseView[],
+          i: number,
+          groupOf: (v: WorkoutExerciseView) => string | null | undefined,
+        ) => moveBlockNext(list, i, groupOf, started).some((v, j) => v !== list[j])
+        const blockMovesOnDoNext = movesOnDoNext(exercises, exercises.indexOf(block[0]), (v) => v.we.supersetGroupId)
+        const cards = block.map((view, mi) => {
           const i = exercises.indexOf(view)
           const next = exercises[i + 1]
           const gid = view.we.supersetGroupId ?? null
@@ -129,24 +139,34 @@ export function ActiveWorkout({ sessionId }: { sessionId: string }) {
               view={view}
               sessionId={session.id}
               locationId={session.locationId}
-              isFirst={bi === 0}
-              isLast={bi === blocks.length - 1}
-              inSuperset={block.length > 1}
+              // Inside a superset, an exercise only moves among the other members; the frame moves the whole superset.
+              isFirst={inSuperset ? mi === 0 : bi === 0}
+              isLast={inSuperset ? mi === block.length - 1 : bi === blocks.length - 1}
+              inSuperset={inSuperset}
               isCurrent={view.we.id === currentId}
               canLinkNext={!!next && (gid === null || next.we.supersetGroupId !== gid)}
-              canDoNext={moveBlockNext(
-                exercises,
-                i,
-                (v) => v.we.supersetGroupId,
-                (v) => v.sets.some((s) => s.isCompleted),
-              ).some((v, j) => v !== exercises[j])}
+              canDoNext={inSuperset ? movesOnDoNext(block, mi, () => null) : blockMovesOnDoNext}
               day={day}
               extraFitIds={extraFitIds}
             />
           )
         })
-        return block.length > 1 ? (
-          <SupersetFrame key={block[0].we.id} size={block.length} hint={nextInSuperset(block)}>
+        return inSuperset ? (
+          <SupersetFrame
+            key={block[0].we.id}
+            size={block.length}
+            hint={nextInSuperset(block)}
+            menu={
+              <SupersetMenu
+                block={block}
+                isFirst={bi === 0}
+                isLast={bi === blocks.length - 1}
+                canDoNext={blockMovesOnDoNext}
+                day={day}
+                extraFitIds={extraFitIds}
+              />
+            }
+          >
             {cards}
           </SupersetFrame>
         ) : (

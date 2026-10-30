@@ -18,6 +18,11 @@ import {
   linkSuperset,
   loadSessionView,
   moveExercise,
+  moveWithinSuperset,
+  moveWithinSupersetNext,
+  removeSuperset,
+  restoreSuperset,
+  skipSuperset,
   removeExercise,
   startWorkout,
   substituteExercise,
@@ -157,6 +162,47 @@ describe('supersets in a workout', () => {
     await linkSuperset((await t2.view())[0].we.id)
     await removeExercise((await t2.view())[1].we.id)
     expect(await groups(t2.view)).toEqual([null])
+  })
+
+  it('reorders members only inside their superset', async () => {
+    const t = await session(['A', 'B', 'C', 'D'])
+    await linkSuperset((await t.view())[1].we.id) // B+C
+    await linkSuperset((await t.view())[2].we.id) // B+C+D
+    const names = async () => (await t.view()).map((x) => x.we.performedNameSnapshot).join('')
+
+    await moveWithinSuperset((await t.view())[1].we.id, -1) // B is first in the group: stays
+    expect(await names()).toBe('ABCD')
+    await moveWithinSuperset((await t.view())[3].we.id, -1) // D up, but only inside the group
+    expect(await names()).toBe('ABDC')
+
+    const c = (await t.view())[3]
+    const b = (await t.view())[1]
+    await completeSet(b.sets[0].id, { weightValue: 10, reps: 10 })
+    await moveWithinSupersetNext(c.we.id) // C below the started B, above D
+    expect(await names()).toBe('ABCD')
+    expect(new Set((await groups(t.view)).slice(1)).size).toBe(1)
+  })
+
+  it('skips and removes a whole superset, with undo', async () => {
+    const t = await session(['A', 'B', 'C'])
+    await linkSuperset((await t.view())[1].we.id) // B+C
+    const names = async () => (await t.view()).map((x) => x.we.performedNameSnapshot).join('')
+
+    await skipSuperset((await t.view())[1].we.id, true)
+    expect((await t.view()).map((x) => x.we.status)).toEqual(['planned', 'skipped', 'skipped'])
+    await skipSuperset((await t.view())[1].we.id, false)
+
+    const removed = await removeSuperset((await t.view())[2].we.id)
+    expect(await names()).toBe('A')
+    await restoreSuperset(removed!)
+    expect(await names()).toBe('ABC')
+    const g = await groups(t.view)
+    expect(g[1]).toBe(g[2])
+    expect(g[1]).toBeTruthy()
+
+    await completeSet((await t.view())[2].sets[0].id, { weightValue: 10, reps: 10 })
+    await expect(skipSuperset((await t.view())[1].we.id, true)).rejects.toThrow()
+    await expect(removeSuperset((await t.view())[1].we.id)).rejects.toThrow()
   })
 })
 

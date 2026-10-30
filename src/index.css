@@ -4577,3 +4577,17 @@ details > .preset-grid {
 .trophy-bar.track-streak4 {
   --bar: #06b6d4;
 }
+
+/* ⋯ menu of a superset as a whole, top right of the frame */
+.superset:has(> .superset-head > .superset-more) {
+  position: relative;
+}
+.superset-head:has(> .superset-more) {
+  padding-right: 36px;
+}
+.superset-more {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  color: var(--superset);
+}

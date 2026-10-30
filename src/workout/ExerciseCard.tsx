@@ -15,6 +15,8 @@ import {
   unlinkSuperset,
   moveExercise,
   moveExerciseNext,
+  moveWithinSuperset,
+  moveWithinSupersetNext,
   removeExercise,
   restoreExercise,
   skipExercise,
@@ -28,7 +30,7 @@ interface Props {
   locationId: string | null
   isFirst: boolean
   isLast: boolean
-  /** Part of a superset (then up/down move the whole superset). */
+  /** Part of a superset: up/down and "do next" then only reorder inside it (the frame's menu moves the whole superset). */
   inSuperset: boolean
   /** The exercise currently being worked on; gets an animated accent border. */
   isCurrent: boolean
@@ -176,19 +178,19 @@ export function ExerciseCard({
             type="button"
             className="btn grow"
             disabled={isFirst}
-            onClick={() => void guard(() => moveExercise(we.id, -1))}
+            onClick={() => void guard(() => (inSuperset ? moveWithinSuperset : moveExercise)(we.id, -1))}
           >
             <IconArrowUp />
-            Move {inSuperset ? 'superset ' : ''}up
+            Move up
           </button>
           <button
             type="button"
             className="btn grow"
             disabled={isLast}
-            onClick={() => void guard(() => moveExercise(we.id, 1))}
+            onClick={() => void guard(() => (inSuperset ? moveWithinSuperset : moveExercise)(we.id, 1))}
           >
             <IconArrowDown />
-            Move {inSuperset ? 'superset ' : ''}down
+            Move down
           </button>
           <button
             type="button"
@@ -196,7 +198,7 @@ export function ExerciseCard({
             disabled={!canDoNext}
             onClick={() => {
               setMenu(false)
-              void guard(() => moveExerciseNext(we.id))
+              void guard(() => (inSuperset ? moveWithinSupersetNext : moveExerciseNext)(we.id))
             }}
           >
             <IconPlay />
