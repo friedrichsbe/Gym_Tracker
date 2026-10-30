@@ -67,6 +67,13 @@ export function TracksSheet(props: {
   )
 }
 
+/**
+ * How far along you are towards a medal, measured from zero (253 of 500 sets = 50 %), so it matches the numbers shown.
+ * Streaks count the streak still alive. Rounded down, so 100 % only shows once it is reached.
+ */
+const absolutePercent = (t: TrackProgress, threshold: number) =>
+  Math.min(99, Math.floor(((t.def.streak ? (t.current ?? 0) : t.value) / threshold) * 100))
+
 function Ladder({ track: t, unit }: { track: TrackProgress; unit: WeightUnit }) {
   return (
     <div className="ladder">
@@ -100,7 +107,7 @@ function Ladder({ track: t, unit }: { track: TrackProgress; unit: WeightUnit }) 
               />
               <span className="rung-value num">{formatTrackValue(t.def.id, threshold, unit)}</span>
               <span className="rung-sub">
-                {reached ? milestoneDate(reached.at) : isNext ? `${Math.round(t.fraction * 100)} %` : tierName(level)}
+                {reached ? milestoneDate(reached.at) : isNext ? `${absolutePercent(t, threshold)} %` : tierName(level)}
               </span>
             </li>
           )
