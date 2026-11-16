@@ -2764,11 +2764,24 @@ table.data tbody tr:hover {
   inset: -15%;
   z-index: -1;
   pointer-events: none;
+  /* Wide, low-chroma washes that fade out long before the edges, so nothing turns vibrant there. */
   background:
-    radial-gradient(42% 38% at 12% 8%, color-mix(in srgb, var(--glow-a) 36%, transparent), transparent 70%),
-    radial-gradient(38% 34% at 92% 14%, color-mix(in srgb, var(--glow-b) 32%, transparent), transparent 70%),
-    radial-gradient(46% 40% at 78% 88%, color-mix(in srgb, var(--glow-c) 34%, transparent), transparent 70%),
-    radial-gradient(34% 30% at 8% 78%, color-mix(in srgb, var(--glow-a) 22%, transparent), transparent 70%);
+    radial-gradient(60% 50% at 18% 12%, color-mix(in srgb, var(--glow-a) 20%, transparent), transparent 80%),
+    radial-gradient(52% 46% at 84% 20%, color-mix(in srgb, var(--glow-b) 16%, transparent), transparent 80%),
+    radial-gradient(62% 52% at 72% 84%, color-mix(in srgb, var(--glow-c) 18%, transparent), transparent 80%),
+    radial-gradient(48% 42% at 16% 76%, color-mix(in srgb, var(--glow-a) 12%, transparent), transparent 80%);
+  filter: blur(30px);
+}
+/* A whisper of film grain over the light, for a frosted-glass feel. */
+:root[data-theme='glow'] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.07;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 @media (prefers-reduced-motion: no-preference) {
   :root[data-theme='glow'] body::before {

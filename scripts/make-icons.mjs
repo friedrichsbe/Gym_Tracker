@@ -54,10 +54,10 @@ const render = (source, size) =>
 writeFileSync(out('favicon.svg'), svg({ rounded: true, scale: 1.45 }))
 
 mkdirSync(out('icons/'), { recursive: true })
-const full = svg({ rounded: false, scale: 1.3 })
+const full = svg({ rounded: false, scale: 1.23 })
 writeFileSync(out('icons/icon-192.png'), render(full, 192))
 writeFileSync(out('icons/icon-512.png'), render(full, 512))
 // Maskable: the OS crops to a circle/squircle; the plate (r 380 of 1024 units at this scale) stays inside the 80% safe zone.
-writeFileSync(out('icons/icon-maskable-512.png'), render(svg({ rounded: false, scale: 1.25 }), 512))
+writeFileSync(out('icons/icon-maskable-512.png'), render(svg({ rounded: false, scale: 1.2 }), 512))
 writeFileSync(out('icons/apple-touch-icon.png'), render(full, 180))
 console.log('icons written to public/')
