@@ -152,7 +152,7 @@ export const settingsSchema = z
     // 'ember' (a burnt orange) was replaced by the new default orange.
     accent: z.preprocess(
       (v) => (v === 'ember' ? 'orange' : v),
-      z.enum(['orange', 'teal', 'blue', 'orchid', 'forest', 'violet', 'rose', 'graphite']),
+      z.enum(['orange', 'amber', 'bronze', 'teal', 'blue', 'orchid', 'forest', 'violet', 'rose', 'graphite']),
     ),
     navLabels: z.boolean(),
     defaultLocationId: nullableId,

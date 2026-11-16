@@ -212,6 +212,30 @@
 /* ---- Accent colours (user choice). Orange (the app-icon colour) is the default defined above.
    Blue and orchid would clash with the "outside the day" (blue) and superset (violet)
    markers, so those markers move to teal while such an accent is active. ---- */
+:root[data-accent='amber'] {
+  --accent: #c9962b;
+  --accent-hover: #b5851f;
+  --accent-text: #8a6212;
+  --on-accent: #241a05;
+}
+:root[data-accent='amber']:is([data-theme='dark'], [data-theme='midnight']) {
+  --accent: #e8b84a;
+  --accent-hover: #f0c766;
+  --accent-text: #f0c766;
+  --on-accent: #241a05;
+}
+:root[data-accent='bronze'] {
+  --accent: #8a5a3c;
+  --accent-hover: #744a30;
+  --accent-text: #7d5033;
+  --on-accent: #ffffff;
+}
+:root[data-accent='bronze']:is([data-theme='dark'], [data-theme='midnight']) {
+  --accent: #c99a7c;
+  --accent-hover: #d6ad92;
+  --accent-text: #d6ad92;
+  --on-accent: #2a1810;
+}
 :root[data-accent='teal'] {
   --accent: #0f7466;
   --accent-hover: #0b5f54;
@@ -2526,19 +2550,19 @@ table.data tbody tr:hover {
   box-shadow: inset 0 22px 0 -2px #131416;
 }
 
-/* Eight swatches: one row when it fits, otherwise two even rows of four (never an orphan). */
+/* Ten swatches: one row when it fits, otherwise two even rows of five (never an orphan). */
 .swatch-box {
   container-type: inline-size;
 }
 .swatches {
   display: grid;
-  grid-template-columns: repeat(4, 34px);
+  grid-template-columns: repeat(5, 34px);
   justify-content: space-between;
   gap: var(--space-3) var(--space-2);
 }
-@container (min-width: 340px) {
+@container (min-width: 420px) {
   .swatches {
-    grid-template-columns: repeat(8, 34px);
+    grid-template-columns: repeat(10, 34px);
   }
 }
 .swatch {
@@ -2585,6 +2609,12 @@ table.data tbody tr:hover {
     0 0 0 2px var(--surface),
     0 0 0 4px var(--ring);
 }
+.swatch[data-swatch='amber'] {
+  --sw: #c9962b;
+}
+.swatch[data-swatch='bronze'] {
+  --sw: #8a5a3c;
+}
 .swatch[data-swatch='teal'] {
   --sw: #0f7466;
 }
@@ -2609,6 +2639,14 @@ table.data tbody tr:hover {
 :root:is([data-theme='dark'], [data-theme='midnight']) .swatch {
   --sw: #e9743f;
   color: #1f0d03;
+}
+:root:is([data-theme='dark'], [data-theme='midnight']) .swatch[data-swatch='amber'] {
+  --sw: #e8b84a;
+  color: #241a05;
+}
+:root:is([data-theme='dark'], [data-theme='midnight']) .swatch[data-swatch='bronze'] {
+  --sw: #c99a7c;
+  color: #2a1810;
 }
 :root:is([data-theme='dark'], [data-theme='midnight']) .swatch[data-swatch='teal'] {
   --sw: #4dbfa9;
@@ -2643,6 +2681,16 @@ table.data tbody tr:hover {
   --glow-a: #e9743f;
   --glow-b: #f5a524;
   --glow-c: #fb7185;
+}
+:root[data-accent='amber'] {
+  --glow-a: #d9a03a;
+  --glow-b: #f5c542;
+  --glow-c: #fb923c;
+}
+:root[data-accent='bronze'] {
+  --glow-a: #b0794f;
+  --glow-b: #d4a373;
+  --glow-c: #e07a5f;
 }
 :root[data-accent='teal'] {
   --glow-a: #14b8a6;
