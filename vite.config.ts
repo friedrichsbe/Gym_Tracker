@@ -19,7 +19,7 @@ export default defineConfig({
         short_name: 'Gym Tracker',
         description: 'Fast, local-first strength training log.',
         theme_color: '#0b0c0e',
-        background_color: '#0b0c0e',
+        background_color: '#E9743F',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '.',
