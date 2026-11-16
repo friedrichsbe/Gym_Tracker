@@ -149,7 +149,11 @@ export const settingsSchema = z
     theme: z.preprocess((v) => (v === 'midnight' ? 'dark' : v), z.enum(['system', 'light', 'dark'])),
     lightStyle: z.enum(['light', 'glow']),
     darkStyle: z.enum(['dark', 'midnight']),
-    accent: z.enum(['teal', 'blue', 'orchid', 'forest', 'ember', 'rose', 'graphite']),
+    // 'ember' (a burnt orange) was replaced by the new default orange.
+    accent: z.preprocess(
+      (v) => (v === 'ember' ? 'orange' : v),
+      z.enum(['orange', 'teal', 'blue', 'orchid', 'forest', 'violet', 'rose', 'graphite']),
+    ),
     navLabels: z.boolean(),
     defaultLocationId: nullableId,
     lastLocationId: nullableId,

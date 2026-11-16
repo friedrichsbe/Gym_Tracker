@@ -2,7 +2,7 @@
 
 /* ==========================================================================
    Design tokens
-   Calm, neutral surfaces · one restrained teal accent · hairline borders.
+   Calm, neutral surfaces · one restrained orange accent · hairline borders.
    Themes: light (default palette below), dark, midnight (OLED black).
    Semantic tokens only — components never reference raw colours.
    ========================================================================== */
@@ -24,10 +24,10 @@
   --muted: #61686f;
   --faint: #9aa0a6;
 
-  --accent: #0f7466;
-  --accent-hover: #0b5f54;
-  --accent-text: #0d6a5d;
-  --on-accent: #ffffff;
+  --accent: #e9743f;
+  --accent-hover: #d9632c;
+  --accent-text: #b4480f;
+  --on-accent: #1f0d03;
   /* Derived from the accent so every accent colour gets matching tints. */
   --accent-subtle: color-mix(in srgb, var(--accent) 10%, transparent);
   --accent-border: color-mix(in srgb, var(--accent) 36%, transparent);
@@ -101,10 +101,10 @@
   --muted: #8a9299;
   --faint: #5e666d;
 
-  --accent: #4dbfa9;
-  --accent-hover: #63cbb7;
-  --accent-text: #6ccdb9;
-  --on-accent: #08201b;
+  --accent: #e9743f;
+  --accent-hover: #f0875a;
+  --accent-text: #f2926a;
+  --on-accent: #1f0d03;
 
   --success: #6fd49a;
   --warning: #e5b85c;
@@ -142,10 +142,10 @@
   --muted: #8a9299;
   --faint: #5a6168;
 
-  --accent: #4dbfa9;
-  --accent-hover: #63cbb7;
-  --accent-text: #6ccdb9;
-  --on-accent: #08201b;
+  --accent: #e9743f;
+  --accent-hover: #f0875a;
+  --accent-text: #f2926a;
+  --on-accent: #1f0d03;
 
   --success: #6fd49a;
   --warning: #e5b85c;
@@ -184,10 +184,10 @@
     --muted: #8a9299;
     --faint: #5e666d;
 
-    --accent: #4dbfa9;
-    --accent-hover: #63cbb7;
-    --accent-text: #6ccdb9;
-    --on-accent: #08201b;
+    --accent: #e9743f;
+    --accent-hover: #f0875a;
+    --accent-text: #f2926a;
+    --on-accent: #1f0d03;
 
     --success: #6fd49a;
     --warning: #e5b85c;
@@ -209,9 +209,21 @@
   }
 }
 
-/* ---- Accent colours (user choice). Teal is the default defined above.
+/* ---- Accent colours (user choice). Orange (the app-icon colour) is the default defined above.
    Blue and orchid would clash with the "outside the day" (blue) and superset (violet)
    markers, so those markers move to teal while such an accent is active. ---- */
+:root[data-accent='teal'] {
+  --accent: #0f7466;
+  --accent-hover: #0b5f54;
+  --accent-text: #0d6a5d;
+  --on-accent: #ffffff;
+}
+:root[data-accent='teal']:is([data-theme='dark'], [data-theme='midnight']) {
+  --accent: #4dbfa9;
+  --accent-hover: #63cbb7;
+  --accent-text: #6ccdb9;
+  --on-accent: #08201b;
+}
 :root[data-accent='blue'] {
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
@@ -246,11 +258,12 @@
   --accent-text: #2a7330;
   --on-accent: #ffffff;
 }
-:root[data-accent='ember'] {
-  --accent: #c2410c;
-  --accent-hover: #a6370a;
-  --accent-text: #b23c0b;
+:root[data-accent='violet'] {
+  --accent: #5f4fa8;
+  --accent-hover: #4f4192;
+  --accent-text: #55459a;
   --on-accent: #ffffff;
+  --superset: #0f7466;
 }
 :root[data-accent='rose'] {
   --accent: #be123c;
@@ -270,11 +283,12 @@
   --accent-text: #86cd8a;
   --on-accent: #0b200c;
 }
-:root[data-accent='ember']:is([data-theme='dark'], [data-theme='midnight']) {
-  --accent: #ef8a4c;
-  --accent-hover: #f39f6a;
-  --accent-text: #f4a06c;
-  --on-accent: #2a1204;
+:root[data-accent='violet']:is([data-theme='dark'], [data-theme='midnight']) {
+  --accent: #a597e0;
+  --accent-hover: #b8adea;
+  --accent-text: #b8adea;
+  --on-accent: #15102e;
+  --superset: #4dbfa9;
 }
 :root[data-accent='rose']:is([data-theme='dark'], [data-theme='midnight']) {
   --accent: #ef7590;
@@ -2518,7 +2532,7 @@ table.data tbody tr:hover {
   gap: var(--space-2);
 }
 .swatch {
-  --sw: #0f7466;
+  --sw: #e9743f;
   appearance: none;
   width: 34px;
   height: 34px;
@@ -2561,6 +2575,9 @@ table.data tbody tr:hover {
     0 0 0 2px var(--surface),
     0 0 0 4px var(--ring);
 }
+.swatch[data-swatch='teal'] {
+  --sw: #0f7466;
+}
 .swatch[data-swatch='blue'] {
   --sw: #2563eb;
 }
@@ -2570,8 +2587,8 @@ table.data tbody tr:hover {
 .swatch[data-swatch='forest'] {
   --sw: #2e7d32;
 }
-.swatch[data-swatch='ember'] {
-  --sw: #c2410c;
+.swatch[data-swatch='violet'] {
+  --sw: #5f4fa8;
 }
 .swatch[data-swatch='rose'] {
   --sw: #be123c;
@@ -2580,14 +2597,18 @@ table.data tbody tr:hover {
   --sw: #2a2d31;
 }
 :root:is([data-theme='dark'], [data-theme='midnight']) .swatch {
+  --sw: #e9743f;
+  color: #1f0d03;
+}
+:root:is([data-theme='dark'], [data-theme='midnight']) .swatch[data-swatch='teal'] {
   --sw: #4dbfa9;
   color: #08201b;
 }
 :root:is([data-theme='dark'], [data-theme='midnight']) .swatch[data-swatch='forest'] {
   --sw: #6cbf70;
 }
-:root:is([data-theme='dark'], [data-theme='midnight']) .swatch[data-swatch='ember'] {
-  --sw: #ef8a4c;
+:root:is([data-theme='dark'], [data-theme='midnight']) .swatch[data-swatch='violet'] {
+  --sw: #a597e0;
 }
 :root:is([data-theme='dark'], [data-theme='midnight']) .swatch[data-swatch='rose'] {
   --sw: #ef7590;
@@ -2609,6 +2630,11 @@ table.data tbody tr:hover {
    ========================================================================== */
 
 :root {
+  --glow-a: #e9743f;
+  --glow-b: #f5a524;
+  --glow-c: #fb7185;
+}
+:root[data-accent='teal'] {
   --glow-a: #14b8a6;
   --glow-b: #38bdf8;
   --glow-c: #6ee7b7;
@@ -2628,10 +2654,10 @@ table.data tbody tr:hover {
   --glow-b: #a3e635;
   --glow-c: #2dd4bf;
 }
-:root[data-accent='ember'] {
-  --glow-a: #f97316;
-  --glow-b: #fb7185;
-  --glow-c: #fbbf24;
+:root[data-accent='violet'] {
+  --glow-a: #7c6bd6;
+  --glow-b: #a78bfa;
+  --glow-c: #6b8cde;
 }
 :root[data-accent='rose'] {
   --glow-a: #f43f5e;

@@ -14,7 +14,7 @@ export type Theme = 'system' | 'light' | 'dark'
 export type LightStyle = 'light' | 'glow'
 /** Which palette is used whenever the dark mode is active. */
 export type DarkStyle = 'dark' | 'midnight'
-export type AccentColor = 'teal' | 'blue' | 'orchid' | 'forest' | 'ember' | 'rose' | 'graphite'
+export type AccentColor = 'orange' | 'teal' | 'blue' | 'orchid' | 'forest' | 'violet' | 'rose' | 'graphite'
 
 /** What a swipe on a workout in the history does. */
 export type HistorySwipeAction = 'none' | 'saveAsPreset' | 'updatePreset' | 'repeat' | 'export' | 'delete'

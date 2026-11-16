@@ -229,7 +229,7 @@ function useSummaries(): Record<SectionId | 'exercises', { text: string; warn?: 
   return {
     appearance: {
       text: `${THEMES.find((t) => t.id === settings.theme)?.label ?? 'System'} · ${
-        ACCENTS.find((a) => a.id === settings.accent)?.label ?? 'Teal'
+        ACCENTS.find((a) => a.id === settings.accent)?.label ?? 'Orange'
       }`,
     },
     workout: {

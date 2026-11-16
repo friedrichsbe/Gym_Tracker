@@ -7,7 +7,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
   lightStyle: 'light',
   darkStyle: 'dark',
-  accent: 'teal',
+  accent: 'orange',
   navLabels: true,
   defaultLocationId: null,
   lastLocationId: null,
@@ -31,7 +31,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 export async function getSettings(): Promise<AppSettings> {
   // Merge so settings saved by an older version pick up defaults for new fields.
-  return { ...DEFAULT_SETTINGS, ...(await db.settings.get('app')) }
+  const merged = { ...DEFAULT_SETTINGS, ...(await db.settings.get('app')) }
+  // 'ember' (burnt orange) no longer exists; the new orange replaces it.
+  if ((merged.accent as string) === 'ember') merged.accent = 'orange'
+  return merged
 }
 
 export async function updateSettings(patch: Partial<Omit<AppSettings, 'key'>>): Promise<AppSettings> {

@@ -7,11 +7,12 @@ export const THEMES: { id: Theme; label: string }[] = [
 ]
 
 export const ACCENTS: { id: AccentColor; label: string }[] = [
+  { id: 'orange', label: 'Orange' },
   { id: 'teal', label: 'Teal' },
   { id: 'blue', label: 'Blue' },
-  { id: 'orchid', label: 'Orchid' },
-  { id: 'forest', label: 'Forest' },
-  { id: 'ember', label: 'Ember' },
-  { id: 'rose', label: 'Rose' },
-  { id: 'graphite', label: 'Graphite' },
+  { id: 'orchid', label: 'Magenta' },
+  { id: 'forest', label: 'Green' },
+  { id: 'violet', label: 'Violet' },
+  { id: 'rose', label: 'Red' },
+  { id: 'graphite', label: 'Neutral' },
 ]

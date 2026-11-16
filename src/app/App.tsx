@@ -40,7 +40,7 @@ function Shell() {
   const theme = settings?.theme ?? 'system'
   const lightStyle = settings?.lightStyle ?? 'light'
   const darkStyle = settings?.darkStyle ?? 'dark'
-  const accent = settings?.accent ?? 'teal'
+  const accent = settings?.accent ?? 'orange'
   useEffect(() => {
     const root = document.documentElement
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
