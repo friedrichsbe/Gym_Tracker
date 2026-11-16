@@ -84,21 +84,23 @@ export function AppearancePanel() {
 
       <section className="card stack" aria-labelledby="accent-title">
         <h2 id="accent-title">Accent colour</h2>
-        <div className="swatches" role="group" aria-labelledby="accent-title">
-          {ACCENTS.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              className="swatch"
-              data-swatch={a.id}
-              aria-pressed={settings.accent === a.id}
-              aria-label={a.label}
-              title={a.label}
-              onClick={() => void guard(() => updateSettings({ accent: a.id }))}
-            >
-              <IconCheck />
-            </button>
-          ))}
+        <div className="swatch-box">
+          <div className="swatches" role="group" aria-labelledby="accent-title">
+            {ACCENTS.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                className="swatch"
+                data-swatch={a.id}
+                aria-pressed={settings.accent === a.id}
+                aria-label={a.label}
+                title={a.label}
+                onClick={() => void guard(() => updateSettings({ accent: a.id }))}
+              >
+                <IconCheck />
+              </button>
+            ))}
+          </div>
         </div>
         <span className="hint">
           {ACCENTS.find((a) => a.id === settings.accent)?.label} · used for buttons, completed sets and charts.
