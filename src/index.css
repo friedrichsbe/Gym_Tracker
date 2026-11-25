@@ -1755,9 +1755,18 @@ details > .preset-list {
   color: var(--warning);
 }
 .tag.foreign {
-  border-color: color-mix(in srgb, var(--foreign) 40%, transparent);
-  background: color-mix(in srgb, var(--foreign) 8%, transparent);
-  color: var(--foreign);
+  border-color: transparent;
+  background: var(--surface-2);
+  color: var(--text-2);
+  gap: 6px;
+}
+.tag.foreign::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--foreign);
+  flex-shrink: 0;
 }
 .tag.accent {
   border-color: var(--accent-border);
@@ -2067,10 +2076,9 @@ input.num-input:focus {
 }
 
 /* Day types & foreign exercises */
-.exercise.foreign {
-  box-shadow:
-    inset 3px 0 0 var(--foreign),
-    var(--shadow-sm);
+.exercise.foreign:not(.current) {
+  border-style: dashed;
+  border-color: var(--border-strong);
 }
 
 /* Routine editor */
