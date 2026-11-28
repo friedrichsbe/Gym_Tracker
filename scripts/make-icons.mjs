@@ -27,18 +27,27 @@ function pills() {
 }
 
 // scale: size of the mark relative to the canvas (1 = design as drawn, the pills span 54% of the width at 1).
-function svg({ rounded, scale }) {
-  const bg = rounded
-    ? `<rect width="1024" height="1024" rx="228" fill="${BG}"/>`
-    : `<rect width="1024" height="1024" fill="${BG}"/>`
+// shape: 'square' | 'rounded' | 'circle' | 'none' (glyph only on transparent, for Android adaptive/monochrome layers).
+function svg({ rounded, scale, shape = rounded ? 'rounded' : 'square' }) {
+  const bg = {
+    rounded: `<rect width="1024" height="1024" rx="228" fill="${BG}"/>`,
+    square: `<rect width="1024" height="1024" fill="${BG}"/>`,
+    circle: `<circle cx="512" cy="512" r="512" fill="${BG}"/>`,
+    none: '',
+  }[shape]
+  // Without a background the hub's hole must be real transparency, so draw it as a ring.
+  const hub =
+    shape === 'none'
+      ? `<circle cx="512" cy="512" r="65" fill="none" stroke="${GLYPH}" stroke-width="62"/>`
+      : `<circle cx="512" cy="512" r="96" fill="${GLYPH}"/>
+    <circle cx="512" cy="512" r="34" fill="${BG}"/>`
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   ${bg}
   <g transform="translate(512 512) scale(${scale}) translate(-512 -512)">
     <g transform="rotate(-90 512 512)" fill="none" stroke-width="${PILL_W}" stroke-linecap="round">
       ${pills()}
     </g>
-    <circle cx="512" cy="512" r="96" fill="${GLYPH}"/>
-    <circle cx="512" cy="512" r="34" fill="${BG}"/>
+    ${hub}
   </g>
 </svg>
 `
@@ -58,3 +67,22 @@ writeFileSync(out('icons/icon-512.png'), render(full, 512))
 writeFileSync(out('icons/icon-maskable-512.png'), render(svg({ rounded: false, scale: 1.2 }), 512))
 writeFileSync(out('icons/apple-touch-icon.png'), render(full, 180))
 console.log('icons written to public/')
+
+// ---- Android (Capacitor) launcher icons ----
+// Legacy (pre-Android 8) square + round icons, and the adaptive-icon layers: a transparent foreground and a
+// monochrome layer (themed icons, Android 13+) on a 108dp canvas, background = @color/ic_launcher_background.
+// The mark stays inside the 66dp safe circle (scale 0.95 → ~51% of the canvas).
+const res = new URL('../android/app/src/main/res/', import.meta.url)
+const DENSITIES = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 }
+const legacy = svg({ shape: 'rounded', scale: 1.3 })
+const round = svg({ shape: 'circle', scale: 1.25 })
+const layer = svg({ shape: 'none', scale: 0.95 })
+for (const [d, f] of Object.entries(DENSITIES)) {
+  const dir = new URL(`mipmap-${d}/`, res)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(new URL('ic_launcher.png', dir), render(legacy, 48 * f))
+  writeFileSync(new URL('ic_launcher_round.png', dir), render(round, 48 * f))
+  writeFileSync(new URL('ic_launcher_foreground.png', dir), render(layer, 108 * f))
+  writeFileSync(new URL('ic_launcher_monochrome.png', dir), render(layer, 108 * f))
+}
+console.log('android launcher icons written to android/app/src/main/res/')

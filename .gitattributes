@@ -1,2 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Android: the Gradle wrapper script must keep LF (CI runs it on Linux)
+android/gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.jks binary

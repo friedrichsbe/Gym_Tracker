@@ -12,9 +12,18 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "build:native": "tsc -b && vite build --mode native",
+    "cap:sync": "npm run build:native && cap sync android",
+    "android:open": "cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.3",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.3",
+    "@capacitor/filesystem": "^8.1.6",
+    "@capacitor/share": "^8.0.3",
+    "@capacitor/splash-screen": "^8.0.2",
     "@fontsource-variable/inter": "^5.2.8",
     "dexie": "^4.4.6",
     "dexie-react-hooks": "^4.4.0",
@@ -24,6 +33,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.3",
     "@resvg/resvg-js": "^2.6.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

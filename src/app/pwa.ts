@@ -13,7 +13,8 @@ function setNeedRefresh(value: boolean) {
 }
 
 export function initPwa() {
-  if (import.meta.env.DEV) return
+  // The Android app ships its web assets inside the APK: no service worker there (updates come with the APK).
+  if (import.meta.env.DEV || __NATIVE__) return
   applyUpdate = registerSW({ onNeedRefresh: () => setNeedRefresh(true) })
 }
 

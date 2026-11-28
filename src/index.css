@@ -4696,3 +4696,16 @@ details > .preset-grid {
   right: var(--space-2);
   color: var(--superset);
 }
+
+/* ==========================================================================
+   Android app (Capacitor): edge-to-edge, the page draws under the status bar.
+   Scoped to :root.native (set by src/native/initNative.ts), so the PWA is untouched.
+   ========================================================================== */
+
+:root.native .content {
+  padding-top: calc(var(--space-6) + env(safe-area-inset-top));
+}
+:root.native .workout-bar {
+  margin-top: calc((var(--space-6) + env(safe-area-inset-top)) * -1);
+  padding-top: calc(var(--space-3) + env(safe-area-inset-top));
+}

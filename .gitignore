@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Android signing material and local SDK config: never commit
+*.jks
+*.keystore
+keystore.properties
+local.properties

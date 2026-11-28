@@ -71,7 +71,10 @@ export function DataPanel() {
       try {
         if (mode === 'replace') {
           // Never overwrite the only copy: hand the user a backup of the current data first.
-          await deliver(await exportJsonFile('gym-tracker-before-restore'))
+          if ((await deliver(await exportJsonFile('gym-tracker-before-restore'))) === 'canceled') {
+            show('Restore stopped: the backup of your current data was not saved.')
+            return
+          }
         }
         await applyImport(plan)
         show(`Imported ${plan.counts.sessions.added} workouts, ${plan.counts.sets.added} sets`)
@@ -101,9 +104,10 @@ export function DataPanel() {
           type="button"
           className="btn primary big"
           onClick={() =>
-            void guard(async () =>
-              show((await deliver(await exportJsonFile())) === 'downloaded' ? 'Backup downloaded' : 'Backup shared'),
-            )
+            void guard(async () => {
+              const r = await deliver(await exportJsonFile())
+              if (r !== 'canceled') show(r === 'downloaded' ? 'Backup downloaded' : 'Backup shared')
+            })
           }
         >
           Back up now (JSON)
@@ -125,11 +129,10 @@ export function DataPanel() {
           type="button"
           className="btn block"
           onClick={() =>
-            void guard(async () =>
-              show(
-                (await deliver(await exportCsvZip())) === 'downloaded' ? 'CSV export downloaded' : 'CSV export shared',
-              ),
-            )
+            void guard(async () => {
+              const r = await deliver(await exportCsvZip())
+              if (r !== 'canceled') show(r === 'downloaded' ? 'CSV export downloaded' : 'CSV export shared')
+            })
           }
         >
           Export as CSV (ZIP, for spreadsheets)

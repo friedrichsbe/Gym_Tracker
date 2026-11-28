@@ -4,41 +4,49 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
-export default defineConfig({
-  // GitHub Pages serves a project site from /<repo>/; the deploy workflow sets BASE_PATH accordingly.
-  base: process.env.BASE_PATH ?? '/',
-  plugins: [
-    react(),
-    VitePWA({
-      // 'prompt': a new service worker waits until the user applies it, so an
-      // update can never reload the page in the middle of a workout (PRD §11).
-      registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
-      manifest: {
-        name: 'Gym Tracker',
-        short_name: 'Gym Tracker',
-        description: 'Fast, local-first strength training log.',
-        theme_color: '#0b0c0e',
-        background_color: '#E9743F',
-        display: 'standalone',
-        orientation: 'portrait',
-        start_url: '.',
-        scope: '.',
-        icons: [
-          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-        ],
-      },
-      workbox: {
-        // Inter: precache only the Latin subsets so the UI font is available offline without bloating the cache.
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}', 'assets/inter-latin-*.woff2'],
-      },
-    }),
-  ],
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    globals: false,
-  },
+export default defineConfig(({ mode }) => {
+  // Two targets from one codebase: the GitHub Pages PWA (default) and the Capacitor Android app
+  // (`vite build --mode native`, or VITE_TARGET=native). Native: relative asset paths, no service worker.
+  const native = mode === 'native' || process.env.VITE_TARGET === 'native'
+  return {
+    // GitHub Pages serves a project site from /<repo>/; the deploy workflow sets BASE_PATH accordingly.
+    base: native ? './' : (process.env.BASE_PATH ?? '/'),
+    // Compile-time flag: in the Pages build every `if (__NATIVE__)` branch (and its Capacitor imports) is dropped.
+    define: { __NATIVE__: JSON.stringify(native) },
+    plugins: [
+      react(),
+      VitePWA({
+        disable: native,
+        // 'prompt': a new service worker waits until the user applies it, so an
+        // update can never reload the page in the middle of a workout (PRD §11).
+        registerType: 'prompt',
+        includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
+        manifest: {
+          name: 'Gym Tracker',
+          short_name: 'Gym Tracker',
+          description: 'Fast, local-first strength training log.',
+          theme_color: '#0b0c0e',
+          background_color: '#E9743F',
+          display: 'standalone',
+          orientation: 'portrait',
+          start_url: '.',
+          scope: '.',
+          icons: [
+            { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+            { src: 'icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          ],
+        },
+        workbox: {
+          // Inter: precache only the Latin subsets so the UI font is available offline without bloating the cache.
+          globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}', 'assets/inter-latin-*.woff2'],
+        },
+      }),
+    ],
+    test: {
+      environment: 'jsdom',
+      setupFiles: ['./src/test/setup.ts'],
+      globals: false,
+    },
+  }
 })

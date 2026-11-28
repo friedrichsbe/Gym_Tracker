@@ -4,7 +4,6 @@ import { groupBy } from '../domain/collections'
 import { nowIso } from '../domain/time'
 import { FORMAT_NAME, FORMAT_VERSION, type ExportFile } from './schema'
 import { buildZip, csvLine } from './zip'
-
 /** Builds the complete, documented JSON export (formatVersion 1). */
 export async function buildExport(): Promise<ExportFile> {
   const [
@@ -404,7 +403,16 @@ export async function deliver(
     share?: boolean
     /** false for partial exports: they must not silence the backup reminder. */ isBackup?: boolean
   } = {},
-): Promise<'shared' | 'downloaded'> {
+): Promise<'shared' | 'downloaded' | 'canceled'> {
+  if (__NATIVE__) {
+    // Android app: always via the system share sheet (Save to Files, Drive, …), see src/native/files.ts.
+    const native = await import('../native/files')
+    if (native.isNative()) {
+      if (!(await native.shareFileNative(file))) return 'canceled'
+      if (opts.isBackup !== false) await updateSettings({ lastExportAt: nowIso() })
+      return 'shared'
+    }
+  }
   const f = new File([file.blob], file.filename, { type: file.blob.type })
   let result: 'shared' | 'downloaded' = 'downloaded'
   if (opts.share && navigator.canShare?.({ files: [f] })) {

@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Gym Tracker</string>
+    <string name="title_activity_main">Gym Tracker</string>
+    <string name="package_name">dev.kiste.gymtracker</string>
+    <string name="custom_url_scheme">dev.kiste.gymtracker</string>
+
+    <!-- Widget "Last workout" -->
+    <string name="widget_name">Last workout</string>
+    <string name="widget_description">Your most recent workout at a glance</string>
+    <string name="widget_label">Last workout</string>
+    <string name="widget_empty_title">No workout yet</string>
+    <string name="widget_empty_subtitle">Tap to start your first workout</string>
+    <string name="widget_sets">Sets</string>
+    <string name="widget_volume">Volume</string>
+    <string name="widget_duration">Duration</string>
+    <string name="widget_minutes">%d min</string>
+    <string name="widget_hours_minutes">%1$d:%2$02d h</string>
+</resources>

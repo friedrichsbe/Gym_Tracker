@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App palette (src/index.css, dark theme). -->
+    <color name="app_bg">#111315</color>
+    <color name="app_surface">#1A1D20</color>
+    <color name="app_border">#14FFFFFF</color>
+    <color name="app_text">#ECEEF0</color>
+    <color name="app_text_2">#B2B8BE</color>
+    <color name="app_muted">#8B9298</color>
+    <color name="app_accent">#E9743F</color>
+    <color name="colorPrimary">#111315</color>
+    <color name="colorPrimaryDark">#111315</color>
+    <color name="colorAccent">#E9743F</color>
+</resources>

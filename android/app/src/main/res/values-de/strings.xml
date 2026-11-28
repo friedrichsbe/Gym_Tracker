@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- Widget "Zuletzt trainiert" -->
+    <string name="widget_name">Zuletzt trainiert</string>
+    <string name="widget_description">Dein letztes Training auf einen Blick</string>
+    <string name="widget_label">Zuletzt trainiert</string>
+    <string name="widget_empty_title">Noch kein Training</string>
+    <string name="widget_empty_subtitle">Tippen, um dein erstes Training zu starten</string>
+    <string name="widget_sets">Sätze</string>
+    <string name="widget_volume">Volumen</string>
+    <string name="widget_duration">Dauer</string>
+    <string name="widget_minutes">%d min</string>
+    <string name="widget_hours_minutes">%1$d:%2$02d h</string>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launch background (pre-Android 12 and behind the WebView): app background with the icon centred. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/app_bg" />
+    <item android:width="96dp" android:height="96dp" android:gravity="center">
+        <bitmap android:src="@mipmap/ic_launcher" android:gravity="fill" />
+    </item>
+</layer-list>
